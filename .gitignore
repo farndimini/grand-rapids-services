@@ -40,6 +40,8 @@ SHUTDOWN_CORRUPTION_REPORT.md
 # Secrets
 gsc-credentials.json
 *credentials*
+Google Search Console API.json
+Custom Search API.txt
 test_groq.py
 test_gemini.py
 
