@@ -1,0 +1,2842 @@
+"""
+LLM Router — Handles Anthropic, OpenRouter, and Groq seamlessly.
+"""
+
+import anthropic
+import urllib.request
+import urllib.error
+import urllib.parse
+import json
+import sys
+import re
+import time
+import textwrap
+
+from datetime import datetime as _dt_router
+from config import API_KEYS, MODELS, SETTINGS
+
+
+# ──────────────────────────────────────────────────────────────
+#  Terminal colors
+# ──────────────────────────────────────────────────────────────
+
+class Color:
+    PURPLE = "\033[35m"
+    GREEN  = "\033[32m"
+    BLUE   = "\033[34m"
+    YELLOW = "\033[33m"
+    CYAN   = "\033[36m"
+    RED    = "\033[31m"
+    BOLD   = "\033[1m"
+    DIM    = "\033[2m"
+    RESET  = "\033[0m"
+
+def c(color: str, text: str) -> str:
+    return f"{getattr(Color, color.upper(), '')}{text}{Color.RESET}"
+
+
+# ──────────────────────────────────────────────────────────────
+#  Validation
+# ──────────────────────────────────────────────────────────────
+
+def validate_config(model_name: str) -> tuple[str, str]:
+    """Returns (provider, model_id) or exits with a clear error."""
+    if model_name not in MODELS:
+        available = "\n  ".join(MODELS.keys())
+        print(c("red", f"\n  ✗ Unknown model: '{model_name}'"))
+        print(c("dim", f"\n  Available models:\n  {available}"))
+        sys.exit(1)
+
+    provider, model_id = MODELS[model_name]
+
+    # Local provider doesn't need an API key
+    if provider != "local":
+        key = API_KEYS.get(provider, "")
+        if not key:
+            print(c("red", f"\n  ✗ Missing API key for provider: {provider}"))
+            print(c("dim", f"  → Open config.py and set API_KEYS[\"{provider}\"]"))
+            sys.exit(1)
+
+    return provider, model_id
+
+
+# ──────────────────────────────────────────────────────────────
+#  Anthropic
+# ──────────────────────────────────────────────────────────────
+
+def _call_anthropic(model_id: str, system: str, user: str, stream: bool) -> str:
+    client = anthropic.Anthropic(api_key=API_KEYS["anthropic"])
+    full   = ""
+
+    if stream:
+        with client.messages.stream(
+            model=model_id,
+            max_tokens=SETTINGS["max_tokens"],
+            system=system,
+            messages=[{"role": "user", "content": user}],
+        ) as s:
+            for chunk in s.text_stream:
+                print(chunk, end="", flush=True)
+                full += chunk
+        print()
+    else:
+        msg  = client.messages.create(
+            model=model_id,
+            max_tokens=SETTINGS["max_tokens"],
+            system=system,
+            messages=[{"role": "user", "content": user}],
+        )
+        full = msg.content[0].text
+
+    return full
+
+
+# ──────────────────────────────────────────────────────────────
+#  OpenRouter  (OpenAI-compatible REST)
+# ──────────────────────────────────────────────────────────────
+
+def _call_openrouter(model_id: str, system: str, user: str, stream: bool) -> str:
+    url     = "https://openrouter.ai/api/v1/chat/completions"
+    headers = {
+        "Authorization":  f"Bearer {API_KEYS['openrouter']}",
+        "Content-Type":   "application/json",
+        "HTTP-Referer":   "https://github.com/seo-agent-pro",
+        "X-Title":        "SEO Agent Pro",
+    }
+    payload = {
+        "model":      model_id,
+        "max_tokens": SETTINGS["max_tokens"],
+        "stream":     stream,
+        "messages": [
+            {"role": "system", "content": system},
+            {"role": "user",   "content": user},
+        ],
+    }
+
+    req  = urllib.request.Request(url, json.dumps(payload).encode(), headers)
+    full = ""
+
+    with urllib.request.urlopen(req) as resp:
+        if stream:
+            for raw_line in resp:
+                line = raw_line.decode("utf-8").strip()
+                if not line.startswith("data:"):
+                    continue
+                data = line[5:].strip()
+                if data == "[DONE]":
+                    break
+                try:
+                    obj   = json.loads(data)
+                    delta = obj["choices"][0]["delta"].get("content", "")
+                    if delta:
+                        print(delta, end="", flush=True)
+                        full += delta
+                except (json.JSONDecodeError, KeyError):
+                    continue
+            print()
+        else:
+            body = json.loads(resp.read().decode("utf-8"))
+            full = body["choices"][0]["message"]["content"]
+
+    return full
+
+
+# ──────────────────────────────────────────────────────────────
+#  Groq  (OpenAI-compatible REST — no streaming via urllib)
+# ──────────────────────────────────────────────────────────────
+
+def _call_groq(model_id: str, system: str, user: str, stream: bool) -> str:
+    url     = "https://api.groq.com/openai/v1/chat/completions"
+    headers = {
+        "Authorization": f"Bearer {API_KEYS['groq']}",
+        "Content-Type":  "application/json",
+        "User-Agent":    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
+    }
+    payload = {
+        "model":      model_id,
+        "max_tokens": SETTINGS["max_tokens"],
+        "stream":     stream,
+        "messages": [
+            {"role": "system", "content": system},
+            {"role": "user",   "content": user},
+        ],
+    }
+
+    req  = urllib.request.Request(url, json.dumps(payload).encode(), headers)
+    full = ""
+
+    with urllib.request.urlopen(req) as resp:
+        if stream:
+            for raw_line in resp:
+                line = raw_line.decode("utf-8").strip()
+                if not line.startswith("data:"):
+                    continue
+                data = line[5:].strip()
+                if data == "[DONE]":
+                    break
+                try:
+                    obj   = json.loads(data)
+                    delta = obj["choices"][0]["delta"].get("content", "")
+                    if delta:
+                        print(delta, end="", flush=True)
+                        full += delta
+                except (json.JSONDecodeError, KeyError):
+                    continue
+            print()
+        else:
+            body = json.loads(resp.read().decode("utf-8"))
+            full = body["choices"][0]["message"]["content"]
+
+    return full
+
+
+# ──────────────────────────────────────────────────────────────
+#  Google Gemini  (REST API — free tier via AI Studio)
+# ──────────────────────────────────────────────────────────────
+
+def _call_google(model_id: str, system: str, user: str, stream: bool) -> str:
+    import requests as _req
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_id}:generateContent?key={API_KEYS['google']}"
+    payload = {
+        "system_instruction": {"parts": [{"text": system}]},
+        "contents": [{"role": "user", "parts": [{"text": user}]}],
+        "generationConfig": {
+            "maxOutputTokens": SETTINGS["max_tokens"],
+            "temperature": 0.7,
+        }
+    }
+    r = _req.post(url, json=payload, timeout=120)
+    if r.status_code != 200:
+        raise urllib.error.HTTPError(url, r.status_code, r.reason if hasattr(r, 'reason') else "Error", {}, None)
+
+    data = r.json()
+    candidates = data.get("candidates", [])
+    if not candidates:
+        raise ValueError(f"Gemini returned no candidates: {data}")
+
+    full = ""
+    for part in candidates[0].get("content", {}).get("parts", []):
+        full += part.get("text", "")
+
+    if stream:
+        print(full, end="", flush=True)
+        print()
+
+    return full
+
+
+# ──────────────────────────────────────────────────────────────
+#  Local AI — generates content without external APIs
+# ──────────────────────────────────────────────────────────────
+
+_LOCAL_ARTICLES = {}
+
+# ── Verified Entity Knowledge Base ──────────────────────────
+# Used as fallback when SERP extraction produces poor quality.
+# Maps keyword categories to trusted entities (brands, tools, products).
+# Each entity has: name, description, pricing, platforms, strengths, weaknesses, target_user.
+_VERIFIED_CATEGORIES = {
+    "screenshot": [
+        {"name": "ShareX", "description": "Open-source screenshot and screen capture tool", "pricing": "Free", "platforms": ["Windows"], "strengths": ["Open source", "Lightweight", "Feature-rich", "Active development", "Custom workflows"], "weaknesses": ["Windows only", "Dated UI", "No built-in cloud sharing"], "target_user": "Power users wanting free, customizable screenshots"},
+        {"name": "Snagit", "description": "Premium screen capture by TechSmith", "pricing": "$39/yr", "platforms": ["Windows", "Mac"], "strengths": ["Polished UI", "Video capture", "Built-in editor", "Step tool", "OCR text extraction"], "weaknesses": ["Paid subscription", "No Linux version", "Occasional performance lag"], "target_user": "Professionals needing polished screen captures with editing"},
+        {"name": "CleanShot X", "description": "Mac-native screenshot utility", "pricing": "$29 once", "platforms": ["Mac"], "strengths": ["Beautiful UI", "Quick annotations", "Cloud upload", "Scrolling capture", "Screen recording"], "weaknesses": ["Mac only", "No free tier beyond trial", "Fewer advanced editing features"], "target_user": "Mac users who want a modern, minimalist screenshot tool"},
+        {"name": "OBS Studio", "description": "Free open-source video recording and streaming", "pricing": "Free", "platforms": ["Windows", "Mac", "Linux"], "strengths": ["Cross-platform", "Professional streaming", "Scene composition", "Plugin ecosystem", "No watermarks"], "weaknesses": ["Steep learning curve", "Overkill for basic screenshots", "No built-in annotation"], "target_user": "Streamers and content creators needing pro recording"},
+        {"name": "Greenshot", "description": "Lightweight open-source screenshot tool", "pricing": "Free", "platforms": ["Windows"], "strengths": ["Extremely lightweight", "Quick annotations", "Open source", "Simple UI", "Printer-friendly exports"], "weaknesses": ["Windows only", "No longer actively developed", "Basic feature set"], "target_user": "Casual users wanting a fast, no-fuss screenshot tool"},
+        {"name": "Lightshot", "description": "Quick sharing screenshot tool", "pricing": "Free", "platforms": ["Windows", "Mac"], "strengths": ["Fast capture workflow", "Instant cloud upload", "Simple editor", "Browser extension"], "weaknesses": ["Limited editing", "No scheduled captures", "Privacy concerns with cloud uploads"], "target_user": "Users who need quick screenshots with instant sharing"},
+        {"name": "Flameshot", "description": "Open-source screenshot with built-in GUI editor", "pricing": "Free", "platforms": ["Windows", "Mac", "Linux"], "strengths": ["Cross-platform", "Built-in image editor", "Open source", "Arrow/box/annotation tools", "DBus integration"], "weaknesses": ["Less polished than commercial options", "Occasional stability issues", "No cloud upload"], "target_user": "Linux users and open-source enthusiasts needing annotation"},
+        {"name": "ScreenPal", "description": "Cloud-based screen recorder and video host", "pricing": "Free/$4mo", "platforms": ["Windows", "Mac"], "strengths": ["Cloud hosting included", "Video editing", "Screen recording", "Embedded player"], "weaknesses": ["Free tier limited", "Requires account", "Watermark on free version"], "target_user": "Educators and trainers creating video tutorials"},
+    ],
+    "password manager": [
+        {"name": "Bitwarden", "description": "Open-source password manager with self-hosting option", "pricing": "Free/$10yr", "platforms": ["Windows", "Mac", "Linux", "iOS", "Android", "Browser"], "strengths": ["Open source", "Audited encryption", "Self-hosting option", "Generous free tier", "All platforms"], "weaknesses": ["UI less polished than 1Password", "No family plan on free tier", "Some features require premium"], "target_user": "Security-conscious users wanting free or self-hosted password management"},
+        {"name": "1Password", "description": "Premium password manager with Travel Mode", "pricing": "$36/yr", "platforms": ["Windows", "Mac", "Linux", "iOS", "Android", "Browser"], "strengths": ["Polished UX", "Travel Mode", "Watchtower security alerts", "Biometric unlock", "Family organizer"], "weaknesses": ["Subscription only", "No free tier (limited trial)", "No self-hosting"], "target_user": "Families and professionals wanting premium, polished security"},
+        {"name": "NordPass", "description": "Password manager by Nord Security", "pricing": "$19/yr", "platforms": ["Windows", "Mac", "Linux", "iOS", "Android", "Browser"], "strengths": ["Clean interface", "Autosave/autofill", "Password health checker", "Data breach scanner", "Competitive pricing"], "weaknesses": ["Newer to market", "Fewer advanced features", "Free tier limited to one device"], "target_user": "Users wanting affordable, modern password management"},
+        {"name": "Dashlane", "description": "Feature-rich password manager with VPN", "pricing": "$55/yr", "platforms": ["Windows", "Mac", "iOS", "Android", "Browser"], "strengths": ["Built-in VPN", "Dark web monitoring", "Password changer", "Phishing alerts", "Clean UI"], "weaknesses": ["Most expensive option", "No Linux app", "Free tier very restricted", "VPN limited to Premium"], "target_user": "Users wanting all-in-one security with password + VPN bundle"},
+        {"name": "Proton Pass", "description": "Encrypted password manager by Proton", "pricing": "Free/$24yr", "platforms": ["Windows", "Mac", "Linux", "iOS", "Android", "Browser"], "strengths": ["End-to-end encrypted", "Open source", "Integrates with Proton ecosystem", "Privacy-focused", "Generous free tier"], "weaknesses": ["Newer platform", "Smaller feature set", "Fewer third-party integrations"], "target_user": "Privacy advocates and existing Proton users"},
+        {"name": "Keeper", "description": "Enterprise-grade password security", "pricing": "$35/yr", "platforms": ["Windows", "Mac", "Linux", "iOS", "Android", "Browser"], "strengths": ["Enterprise security", "BreachWatch monitoring", "Secure file storage", "Biometric login", "24/7 support"], "weaknesses": ["More expensive than competitors", "UI can feel cluttered", "Free tier minimal"], "target_user": "Enterprises and security teams needing compliance-grade security"},
+        {"name": "LastPass", "description": "Cloud-based password manager", "pricing": "Free/$36yr", "platforms": ["Windows", "Mac", "Linux", "iOS", "Android", "Browser"], "strengths": ["Mature platform", "Wide browser support", "Emergency access", "One-time passwords", "Password sharing"], "weaknesses": ["Past security breaches", "Free tier limited to one device type", "UI overhaul frustrated users"], "target_user": "Users wanting a well-known, established password manager"},
+        {"name": "RoboForm", "description": "Form-filling focused password manager", "pricing": "$24/yr", "platforms": ["Windows", "Mac", "iOS", "Android", "Browser"], "strengths": ["Excellent form filling", "Bookmark management", "Secure notes", "Identity management", "Affordable"], "weaknesses": ["Dated interface", "Less polished mobile app", "Smaller brand recognition"], "target_user": "Users who prioritize form-filling over flashy design"},
+    ],
+    "video editor": [
+        {"name": "DaVinci Resolve", "description": "Professional color grading and video editing suite", "pricing": "Free/$295", "platforms": ["Windows", "Mac", "Linux"], "strengths": ["Hollywood-grade color grading", "Fusion VFX", "Fairlight audio", "Free version is powerful", "Cross-platform"], "weaknesses": ["Steep learning curve", "Requires powerful hardware", "Not great for quick edits"], "target_user": "Professional editors and colorists"},
+        {"name": "Adobe Premiere Pro", "description": "Industry-standard nonlinear video editor", "pricing": "$55/mo", "platforms": ["Windows", "Mac"], "strengths": ["Industry standard", "Creative Cloud integration", "Vast plugin ecosystem", "Team collaboration", "Regular updates"], "weaknesses": ["Subscription only", "Expensive long-term", "Resource heavy", "Stability issues on Windows"], "target_user": "Professional video editors in production environments"},
+        {"name": "Final Cut Pro", "description": "Apple's professional video editor", "pricing": "$300 once", "platforms": ["Mac"], "strengths": ["Incredible performance on Mac", "Magnetic timeline", "One-time purchase", "Fast rendering", "Intuitive interface"], "weaknesses": ["Mac only", "No Windows version", "Less industry adoption than Premiere"], "target_user": "Mac-based video editors and YouTubers"},
+        {"name": "CapCut", "description": "Free video editor by ByteDance", "pricing": "Free", "platforms": ["Windows", "Mac", "iOS", "Android", "Web"], "strengths": ["Completely free", "Mobile + desktop", "Trending effects", "Easy to use", "Auto-captions"], "weaknesses": ["Privacy concerns (ByteDance)", "Limited pro features", "Some effects feel gimmicky"], "target_user": "Social media content creators and TikTok users"},
+        {"name": "Filmora", "description": "Beginner-friendly video editor", "pricing": "$50/yr", "platforms": ["Windows", "Mac"], "strengths": ["Very easy to learn", "Built-in effects library", "Split-screen", "Audio ducking", "Good for beginners"], "weaknesses": ["Watermark on free version", "Less advanced than competition", "Subscription model"], "target_user": "Beginners and hobbyist video creators"},
+        {"name": "Shotcut", "description": "Open-source cross-platform video editor", "pricing": "Free", "platforms": ["Windows", "Mac", "Linux"], "strengths": ["Free and open source", "Cross-platform", "Wide format support", "No watermark", "Active development"], "weaknesses": ["UI feels dated", "Less polished workflow", "Fewer advanced effects"], "target_user": "Budget-conscious creators wanting free video editing"},
+        {"name": "HitFilm", "description": "VFX and video editing hybrid", "pricing": "Free/$13mo", "platforms": ["Windows", "Mac"], "strengths": ["VFX compositing built in", "Free tier capable", "3D rendering", "Particle simulator", "Good for indie filmmakers"], "weaknesses": ["Free tier limited exports", "Performance lag on older hardware", "Complex interface"], "target_user": "Indie filmmakers and VFX enthusiasts on a budget"},
+    ],
+    "seo tool": [
+        {"name": "Ahrefs", "description": "Comprehensive SEO analysis suite", "pricing": "$99/mo", "platforms": ["Web"], "strengths": ["Massive backlink index", "Keyword explorer", "Content gap analysis", "Site audit", "Rank tracker"], "weaknesses": ["Expensive", "Limits on lower tiers", "No free tier", "Learning curve"], "target_user": "Professional SEOs and content marketers"},
+        {"name": "Semrush", "description": "All-in-one digital marketing toolkit", "pricing": "$140/mo", "platforms": ["Web"], "strengths": ["Keyword research", "Competitor analysis", "PPC data", "Content marketing toolkit", "Social media management"], "weaknesses": ["Most expensive", "Data accuracy varies", "Overwhelming for beginners"], "target_user": "Digital marketing agencies and power users"},
+        {"name": "Moz Pro", "description": "SEO software with Domain Authority metric", "pricing": "$99/mo", "platforms": ["Web"], "strengths": ["Domain Authority metric", "Keyword explorer", "Site crawl", "Link analysis", "Beginner-friendly"], "weaknesses": ["Smaller index than Ahrefs", "Fewer features", "Slower updates"], "target_user": "SEO beginners and small business marketers"},
+        {"name": "Screaming Frog", "description": "SEO spider tool for technical audits", "pricing": "Free/$259yr", "platforms": ["Windows", "Mac", "Linux"], "strengths": ["Deep technical crawl", "Custom extraction", "Integration with GA/GSC", "XSLT rendering", "One-time purchase option"], "weaknesses": ["Desktop app (not SaaS)", "No keyword research", "Requires technical knowledge"], "target_user": "Technical SEOs and site auditors"},
+        {"name": "Google Search Console", "description": "Free Google SEO performance tool", "pricing": "Free", "platforms": ["Web"], "strengths": ["Official Google data", "Free", "Performance reports", "Index coverage", "Core Web Vitals"], "weaknesses": ["Limited historical data", "No competitive analysis", "No keyword suggestions"], "target_user": "Every website owner (essential free tool)"},
+        {"name": "Surfer SEO", "description": "On-page content optimization tool", "pricing": "$89/mo", "platforms": ["Web"], "strengths": ["Content score", "SERP analyzer", "NLP keywords", "Integration with Docs/WordPress", "Real-time optimization"], "weaknesses": ["No backlink analysis", "No rank tracking", "Lower-tier limits"], "target_user": "Content writers and SEO content strategists"},
+        {"name": "Yoast SEO", "description": "WordPress SEO plugin", "pricing": "Free/$99yr", "platforms": ["WordPress"], "strengths": ["Easy WordPress integration", "Readability analysis", "XML sitemaps", "Schema markup", "Breadcrumbs"], "weaknesses": ["WordPress only", "Can slow down sites", "Focuses on on-page only"], "target_user": "WordPress site owners and bloggers"},
+    ],
+    "project management": [
+        {"name": "Jira", "description": "Agile project management for software teams", "pricing": "Free/$8mo", "platforms": ["Web", "iOS", "Android"], "strengths": ["Powerful agile workflows", "Scrum/Kanban boards", "Roadmaps", "Dev tool integration", "Customizable"], "weaknesses": ["Steep learning curve", "Heavy interface", "Overkill for non-engineering teams"], "target_user": "Software development and engineering teams"},
+        {"name": "Asana", "description": "Team workflow and project management", "pricing": "Free/$11mo", "platforms": ["Web", "iOS", "Android", "Mac", "Windows"], "strengths": ["Clean interface", "Timeline view", "Automations", "Portfolio tracking", "Goal setting"], "weaknesses": ["Free tier limited", "No native time tracking", "Can get noisy with large teams"], "target_user": "Cross-functional teams and marketing departments"},
+        {"name": "Trello", "description": "Kanban board project management", "pricing": "Free/$10mo", "platforms": ["Web", "iOS", "Android", "Mac", "Windows"], "strengths": ["Simple Kanban system", "Extremely easy to use", "Power-Ups", "Butler automation", "Free tier generous"], "weaknesses": ["Limited for complex projects", "No native time tracking", "No reporting built-in"], "target_user": "Small teams and individuals wanting simple task tracking"},
+        {"name": "Notion", "description": "All-in-one workspace and project management", "pricing": "Free/$10mo", "platforms": ["Web", "iOS", "Android", "Mac", "Windows"], "strengths": ["Extremely flexible", "Docs + wiki + PM in one", "Database views", "Templates", "AI features"], "weaknesses": ["Can become disorganized", "Performance with large databases", "No offline mode"], "target_user": "Teams wanting a flexible, all-in-one workspace"},
+        {"name": "Monday.com", "description": "Visual work OS platform", "pricing": "$9/mo", "platforms": ["Web", "iOS", "Android", "Mac", "Windows"], "strengths": ["Beautiful interface", "Automation recipes", "Multiple views", "Time tracking", "Integration marketplace"], "weaknesses": ["Expensive per seat", "Limited free tier", "Some features behind paywall"], "target_user": "Business teams wanting visual project tracking"},
+        {"name": "ClickUp", "description": "Productivity platform with everything in one tool", "pricing": "Free/$10mo", "platforms": ["Web", "iOS", "Android", "Mac", "Windows", "Linux"], "strengths": ["Feature-packed", "Multiple views", "Docs integration", "Goals and OKRs", "Good free tier"], "weaknesses": ["Can feel overwhelming", "Performance issues", "Steep learning curve for full feature set"], "target_user": "Power users wanting maximum features per dollar"},
+        {"name": "Linear", "description": "Modern issue tracking for software teams", "pricing": "Free/$14mo", "platforms": ["Web", "Mac", "iOS", "Android"], "strengths": ["Blazing fast", "Beautiful design", "Keyboard-first UX", "Cycle tracking", "Git integration"], "weaknesses": ["No Windows desktop app", "Fewer integrations", "Not for non-technical teams"], "target_user": "Modern software teams wanting fast, minimal issue tracking"},
+    ],
+    "popup blocker": [
+        {"name": "uBlock Origin", "description": "Fast, lightweight open-source ad and popup blocker", "pricing": "Free", "platforms": ["Chrome", "Edge", "Firefox", "Opera", "Brave"], "strengths": ["Extremely efficient", "Minimal memory usage", "Open source", "Advanced user mode", "No user tracking"], "weaknesses": ["No longer available on Chrome Web Store for new installs", "May break some sites", "Learning curve for advanced filters"], "target_user": "Privacy-conscious users wanting the fastest, lightest blocker"},
+        {"name": "AdBlock", "description": "Popular ad and popup blocker with 65M+ users", "pricing": "Free/$4mo", "platforms": ["Chrome", "Edge", "Firefox", "Safari", "iOS", "Android"], "strengths": ["Easy to use", "Allowlist for favorite sites", "Large filter lists", "Social media blocking", "Cross-device sync"], "weaknesses": ["Accepted 'acceptable ads' by default", "Heavier than uBlock Origin", "More memory intensive", "Premium subscription introduced"], "target_user": "General users wanting a simple, one-click popup blocker"},
+        {"name": "AdBlock Plus", "description": "Original ad blocking extension with customizable filters", "pricing": "Free", "platforms": ["Chrome", "Edge", "Firefox", "Safari", "iOS", "Android", "Opera", "Yandex"], "strengths": ["Highly customizable filters", "Element hiding tool", "Acceptable Ads program (controllable)", "Open source", "Wide platform support"], "weaknesses": ["Acceptable Ads program controversial", "Slower than alternatives", "Chrome Manifest V3 transition issues"], "target_user": "Power users wanting fine-grained control over filtering"},
+        {"name": "Ghostery", "description": "Privacy-focused tracker and popup blocker", "pricing": "Free/$5mo", "platforms": ["Chrome", "Edge", "Firefox", "Opera", "iOS", "Android"], "strengths": ["Tracker blocking layered on popup blocking", "Detailed tracking analytics", "Anti-tracking in paid version", "Privacy dashboard", "Lightweight"], "weaknesses": ["Pop-up blocking secondary to tracker blocking", "Free tier lacks anti-tracking", "Smaller filter community"], "target_user": "Privacy enthusiasts wanting tracker + popup protection"},
+        {"name": "Poper Blocker", "description": "Smart popup blocker for over 50 popup types", "pricing": "Free/$2mo", "platforms": ["Chrome"], "strengths": ["Blocks overlay, floating, timed, scroll, exit, and video popups", "Smart detection learns from behavior", "Whitelist per site", "Statistics dashboard", "Affordable premium"], "weaknesses": ["Chrome only", "Paid tier for advanced features", "Smaller user base"], "target_user": "Users annoyed by aggressive newsletter and overlay popups"},
+        {"name": "StopTheMadness", "description": "Safari popup and anti-tracking extension", "pricing": "$4 once", "platforms": ["Safari", "iOS"], "strengths": ["Blocks sign-in popups, newsletter overlays, and paywalls", "Removes URL tracking parameters", "One-time purchase", "Very privacy focused", "Regular updates"], "weaknesses": ["Apple ecosystem only", "Not a traditional ad blocker", "May break some login flows"], "target_user": "Safari users wanting to remove popups and tracking"},
+        {"name": "Brave Browser", "description": "Privacy browser with built-in ad and popup blocking", "pricing": "Free", "platforms": ["Windows", "Mac", "Linux", "iOS", "Android"], "strengths": ["Built-in blocking (no extension needed)", "Shields per site", "Tor mode in private tabs", "Built faster than Chrome with extensions", "No data collection"], "weaknesses": ["Not an extension (separate browser)", "Crypto/BAT wallet features controversial", "Occasional site compatibility issues"], "target_user": "Users wanting a Chromium browser with blocking built-in"},
+    ],
+    "chatgpt side panel": [
+        {"name": "ChatGPT Sidebar (by AI Sidebar)", "description": "AI assistant sidebar that works alongside any website", "pricing": "Free/$15mo", "platforms": ["Chrome"], "strengths": ["Works on any page", "ChatGPT + Claude + Bard in one sidebar", "Summarize, rewrite, translate selection", "Prompt templates library", "Free tier usable"], "weaknesses": ["Chrome only", "Premium needed for GPT-4 access", "Data sent to third-party servers", "Free tier limits daily queries"], "target_user": "Users wanting an AI assistant accessible from any webpage"},
+        {"name": "Sider", "description": "ChatGPT sidebar with image generation and reading tools", "pricing": "Free/$10mo", "platforms": ["Chrome", "Edge"], "strengths": ["Multi-model support (GPT-4, Claude, Gemini)", "DALL-E image generation in sidebar", "Chat with PDF/image/website content", "Code highlighting", "Chat history search"], "weaknesses": ["Free tier has daily limits", "Some models behind paywall", "Occasional response lag"], "target_user": "Power users wanting multi-model AI access in a sidebar"},
+        {"name": "Monica", "description": "AI assistant powered by ChatGPT, Claude, Gemini, Llama", "pricing": "Free/$10mo", "platforms": ["Chrome", "Edge"], "strengths": ["Aggregates 4+ models", "Image understanding", "Write/translate/summarize anywhere", "Knowledge base upload", "Artifact preview for code"], "weaknesses": ["Free tier very restrictive", "Multiple models can be confusing", "No dedicated desktop app"], "target_user": "Users wanting a single hub for multiple AI models"},
+        {"name": "ChatHub", "description": "Compare AI models side by side in sidebar", "pricing": "Free/$10mo", "platforms": ["Chrome", "Edge"], "strengths": ["Side-by-side model comparison", "GPT-4, Claude, Gemini, Llama support", "Markdown/code rendering", "Prompt library", "Chat history"], "weaknesses": ["Comparison-focused (not general assistant)", "Free tier limited queries", "No image generation"], "target_user": "AI enthusiasts wanting to compare model responses directly"},
+        {"name": "MaxAI.me", "description": "AI productivity sidebar with 1-click actions", "pricing": "Free/$10mo", "platforms": ["Chrome", "Edge"], "strengths": ["1-click summarize, reply, explain", "Gmail/LinkedIn/Twitter integration", "Custom prompt templates", "Multi-model support", "Writing tone adjustment"], "weaknesses": ["Best features require premium", "Heavier on system resources", "Overwhelming toolbar options"], "target_user": "Professionals wanting quick AI actions on social and email platforms"},
+        {"name": "Komo AI", "description": "AI sidebar for search and web exploration", "pricing": "Free/$15mo", "platforms": ["Chrome"], "strengths": ["Real-time web search in sidebar", "Chat with search results", "Mind map generation", "Free tier includes search", "Clean interface"], "weaknesses": ["Chrome only", "Newer platform (fewer reviews)", "Limited integrations"], "target_user": "Researchers wanting AI-powered web search in a sidebar"},
+    ],
+    "grammar checker": [
+        {"name": "Grammarly", "description": "AI-powered writing assistant for grammar, tone, and clarity", "pricing": "Free/$12mo", "platforms": ["Web", "Chrome", "Edge", "Safari", "Firefox", "Windows", "Mac", "iOS", "Android"], "strengths": ["Best-in-class grammar detection", "Tone suggestions", "Genre-specific writing goals", "Plagiarism checker (premium)", "Works across all browsers"], "weaknesses": ["Privacy concerns (data sent to cloud)", "Free tier limited to basic corrections", "Over-aggresive suggestions sometimes", "No offline mode"], "target_user": "Writers and professionals wanting polished, error-free writing"},
+        {"name": "ProWritingAid", "description": "In-depth writing analysis and editing tool", "pricing": "Free/$10mo", "platforms": ["Web", "Chrome", "Edge", "Firefox", "Safari", "Windows", "Mac", "iOS", "Android"], "strengths": ["Deep style analysis (20+ reports)", "Integrates with MS Word/Google Docs/Scrivener", "Contextual thesaurus", "Plagiarism checker (premium)", "Affordable annual pricing"], "weaknesses": ["Overwhelming number of reports for casual users", "Grammar detection less accurate than Grammarly", "Free tier limited to 500 words per check"], "target_user": "Serious writers and editors wanting detailed style improvement reports"},
+        {"name": "LanguageTool", "description": "Open-source grammar and style checker with multilingual support", "pricing": "Free/$7mo", "platforms": ["Web", "Chrome", "Edge", "Firefox", "Safari", "Windows", "Mac", "Linux", "iOS", "Android"], "strengths": ["Supports 30+ languages", "Open source", "Self-hosting option", "Browser extensions for all major browsers", "Affordable premium tier"], "weaknesses": ["English grammar detection less deep than Grammarly", "UI less polished", "Premium needed for advanced style checks"], "target_user": "Non-native English speakers and multilingual writers"},
+        {"name": "Hemingway Editor", "description": "Readability-focused writing editor", "pricing": "Free web/$20 once", "platforms": ["Web", "Windows", "Mac"], "strengths": ["Excellent readability scoring", "Highlights complex sentences", "Suggests simpler alternatives", "One-time purchase", "Clean minimalist UI"], "weaknesses": ["Desktop app outdated (v3.0 from 2021)", "No browser extension", "No grammar checking beyond readability", "No integration with writing tools"], "target_user": "Bloggers and web writers wanting clearer, more readable prose"},
+        {"name": "QuillBot", "description": "AI paraphrasing and grammar checking tool", "pricing": "Free/$10mo", "platforms": ["Web", "Chrome", "Edge", "Firefox", "iOS", "Android"], "strengths": ["Excellent paraphrasing engine", "Multiple writing modes (standard/fluency/formal)", "Summarizer tool included", "Citation generator", "Co-writer feature for long-form writing"], "weaknesses": ["Grammar checker secondary to paraphrasing", "Premium needed for unlimited words", "Some paraphrases change meaning subtly", "No desktop app"], "target_user": "Students and researchers wanting paraphrasing + grammar help"},
+        {"name": "Ginger", "description": "Grammar checker with translation and sentence rephrasing", "pricing": "Free/$14mo", "platforms": ["Web", "Chrome", "Edge", "Safari", "Windows", "Mac", "iOS", "Android"], "strengths": ["Sentence rephrasing engine", "Text-to-speech reader", "Translation in 60+ languages", "Personal dictionary", "Works with Microsoft Office"], "weaknesses": ["Less accurate than Grammarly", "Browser extension occasionally fails to activate", "Higher price than alternatives", "Smaller user community"], "target_user": "ESL learners wanting grammar help with translation support"},
+        {"name": "Write & Improve (Cambridge)", "description": "Free writing assessment tool by Cambridge English", "pricing": "Free", "platforms": ["Web"], "strengths": ["Free", "Developed by Cambridge University", "CEFR level assessment", "Instant feedback", "Task-based exercises"], "weaknesses": ["Web only (no browser extension)", "Designed for English learners", "No integration with other tools"], "target_user": "English learners wanting free, academic-style writing feedback"},
+        {"name": "Slick Write", "description": "Free online grammar and style checker", "pricing": "Free", "platforms": ["Web"], "strengths": ["Completely free", "Detailed flow/readability analysis", "Checks for cliches and redundant phrases", "Customizable feedback", "No account required"], "weaknesses": ["Less polished UI", "No browser extensions", "No desktop/mobile apps", "Less accurate than paid alternatives"], "target_user": "Budget-conscious writers wanting free proofreading help"},
+    ],
+}
+
+# ── Entity Validation ──────────────────────────────────────
+# Strict filters to reject junk, merged, or malformed entities
+# from SERP snippets while keeping real brands, products, and tools.
+
+_ENTITY_SKIP_PREFIXES = (
+    "the ", "a ", "an ", "top ", "best ", "our ", "your ", "we've ", "we ", "i ",
+    "how ", "what ", "why ", "when ", "where ", "is ", "are ", "was ", "were ",
+    "does ", "do ", "can ", "will ", "would ", "could ", "should ", "has ", "have ",
+    "had ", "been ", "being ", "get ", "got ", "lets ", "let's ", "dont ", "don't ",
+    "wont ", "won't ", "cant ", "can't ", "isnt ", "isn't ", "arent ", "aren't "
+)
+
+_BRAND_CORPUS = {
+    "microsoft", "apple", "google", "amazon", "meta", "netflix", "spotify", "adobe",
+    "oracle", "ibm", "intel", "amd", "nvidia", "samsung", "sony", "dell", "hp",
+    "lenovo", "asus", "acer", "logitech", "corsair", "razer", "slack", "zoom",
+    "github", "gitlab", "bitbucket", "atlassian", "salesforce", "hubspot", "shopify",
+    "wordpress", "wix", "squarespace", "cloudflare", "digitalocean", "heroku",
+    "canva", "figma", "sketch", "notion", "evernote", "trello", "asana", "jira",
+    "clickup", "monday.com", "basecamp", "airtable", "mongodb", "postgresql",
+    "mysql", "redis", "docker", "kubernetes", "linux", "ubuntu", "debian", "fedora",
+    "windows", "macos", "android", "ios", "chrome", "firefox", "safari", "edge",
+    "brave", "opera", "tor", "vpn", "expressvpn", "nordvpn", "protonvpn", "tailscale",
+    "cloudron", "synology", "qnap", "raspberry pi", "arduino", "python", "javascript",
+    "typescript", "rust", "golang", "react", "vue", "angular", "django", "flask",
+    "spring", "laravel", "ruby", "rails", "aws", "azure", "gcp", "terraform",
+    "ansible", "puppet", "chef", "jenkins", "circleci", "travisci", "datadog",
+    "newrelic", "sentry", "grafana", "prometheus", "elasticsearch", "kibana",
+    "screaming frog", "ahrefs", "semrush", "moz", "yoast", "rankmath",
+}
+
+# Words that appear capitalized in SERP text but are NEVER valid entities
+_REJECT_WORDS = {
+    "find", "learn", "discover", "search", "create", "build", "use", "try",
+    "explore", "download", "watch", "read", "browse", "compare", "share",
+    "start", "get", "view", "edit", "launch", "open", "run", "add", "manage",
+    "configure", "select", "choose", "pick", "enter", "type", "click", "tap",
+    "swipe", "drag", "drop", "upload", "import", "export", "sync", "backup",
+    "restore", "reset", "delete", "remove", "hide", "show", "save", "publish",
+    "schedule", "preview", "update", "upgrade", "install", "enable", "disable",
+    "home", "blog", "pricing", "features", "docs", "support", "help", "faq",
+    "about", "contact", "careers", "press", "investors",
+    "today", "yesterday", "tomorrow", "now", "latest", "recent", "popular",
+    "trending", "new", "old",
+}
+
+def _score_entity(name: str, keyword: str = "") -> int:
+    """Score a candidate entity 0-100. Higher = more likely a real brand/product."""
+    lower = name.lower().strip()
+    # Auto-zero for reject words
+    if lower in _REJECT_WORDS:
+        return 0
+    # Auto-zero for single generic words not in brand corpus
+    if len(name.split()) == 1:
+        if lower not in _BRAND_CORPUS and lower.strip(".,:;!?").isalpha():
+            # Check if it's a common English word (verb/noun that isn't a brand)
+            if len(lower) <= 8 and lower[0].isalpha() and re.match(r'^[a-z]+$', lower):
+                return 0
+    # 50pts — known brand
+    if lower in _BRAND_CORPUS:
+        return 50
+    # 40pts — matches verified category
+    if keyword:
+        kw_lower = keyword.lower()
+        for cat_key, entities in _VERIFIED_CATEGORIES.items():
+            if cat_key in kw_lower:
+                for ent in entities:
+                    if ent.get("name", "").lower() == lower:
+                        return 40
+    # 30pts — proper multi-word name (Title Case, 2+ words)
+    words = name.split()
+    if len(words) >= 2 and all(w[0].isupper() for w in words if w):
+        return 30
+    # 20pts — single capitalized word, 6+ chars, not a common word
+    if len(words) == 1 and len(name) >= 6:
+        return 20
+    return 0
+
+def _validate_entity(name: str, keyword: str = "") -> str | None:
+    """Return cleaned entity name if valid, None if junk."""
+    raw = name.strip()
+    if len(raw) < 3 or len(raw) > 50:
+        return None
+    lower = raw.lower()
+
+    # Reject if it's the keyword itself
+    if keyword and (lower == keyword.lower() or lower in keyword.lower()):
+        return None
+
+    # Reject merged-words (no spaces, multiple capitals): "Thebestpasswordmanagerstake"
+    if " " not in raw and re.search(r'[a-z][A-Z]', raw):
+        return None
+
+    # Reject date patterns: "Updated April", "May 2026", etc.
+    if re.search(r'(?i)\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\w*\s+\d{4}\b', lower):
+        return None
+    if re.search(r'(?i)\b(updated|published|modified|created)\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)', lower):
+        return None
+
+    # Reject single-letter tokens or purely numeric
+    if re.match(r'^[\d\s,.-]+$', raw):
+        return None
+    if all(len(t) <= 2 for t in raw.split() if t):
+        return None
+
+    # Reject known navigation/junk fragments
+    nav_patterns = [
+        "skip to", "main content", "menu", "search", "login", "sign up", "sign in",
+        "register", "subscribe", "contact", "about us", "privacy policy", "terms of",
+        "cookie", "home page", "back to", "load more", "show more", "read more",
+        "click here", "learn more", "get started", "try free", "start free",
+        "free trial", "watch video", "see all", "view all", "browse all",
+    ]
+    if any(p in lower for p in nav_patterns):
+        return None
+
+    # Reject if starts with verb prefix (unless known brand, e.g. "ExpressVPN")
+    starts_with_skip = any(lower.startswith(p) for p in _ENTITY_SKIP_PREFIXES)
+    if starts_with_skip and raw not in _BRAND_CORPUS and raw.lower() not in _BRAND_CORPUS:
+        return None
+
+    # Reject random capitalization fragments (e.g. "Gunnar Kallstrom" — author names)
+    is_author_pattern = bool(re.match(r'^[A-Z][a-z]+\s+[A-Z][a-z]+$', raw))
+    if is_author_pattern:
+        words = raw.split()
+        # More aggressive: any two capitalized words likely an author unless it's a known brand
+        if any(w.lower() in _BRAND_CORPUS for w in words):
+            pass  # Allow "John Deere" style brand
+        elif len(words) == 2 and all(len(w) > 2 for w in words):
+            if raw.lower() not in _BRAND_CORPUS:
+                return None  # Likely author name — reject regardless of length
+
+    # Reject author bylines and attribution patterns
+    if re.search(r'(?i)\b(by|written by|reviewed by|edited by)\s+[A-Z][a-z]', raw):
+        return None
+
+    # Reject text containing URLs or email-like patterns
+    if re.search(r'https?://|www\.|\.com|\.org|\.net|\.io\b', lower):
+        return None
+    if re.search(r'[\w.+-]+@[\w-]+\.[\w.-]+', lower):
+        return None
+
+    # Reject mixed alphanumeric merged tokens (likely malformed brand): "D1gitalT00ls"
+    if re.search(r'[a-zA-Z]+[0-9]+[a-zA-Z]', raw):
+        return None
+
+    # Reject entities that are just generic nouns (single word, common)
+    common_nouns = {"tool", "software", "app", "application", "platform", "service",
+                    "solution", "product", "system", "program", "suite", "package",
+                    "utility", "feature", "option", "choice", "pick", "alternative",
+                    "provider", "company", "vendor", "brand", "website", "site",
+                    "extension", "plugin", "addon", "add-on", "integration",
+                    "browser", "device", "desktop", "mobile", "online", "cloud"}
+    if len(raw.split()) == 1 and raw.lower().strip(",.!?:;") in common_nouns:
+        return None
+
+    # Reject if too generic or contains generic words as main entity
+    generic_words = {"guide", "review", "review", "tips", "tricks", "best", "top",
+                     "free", "cheap", "affordable", "ultimate", "complete", "essential",
+                     "simple", "easy", "quick", "fast", "advanced", "pro", "expert"}
+    words = raw.lower().split()
+    generic_count = sum(1 for w in words if w.strip(",:;.!?") in generic_words)
+    if generic_count >= len(words) - 1 and len(words) > 1:
+        return None
+
+    return raw
+
+
+def _get_verified_entities(category_hint: str, intent: str = "commercial") -> list[dict]:
+    """Return verified entity dicts from knowledge base if keyword matches a known category.
+
+    For news/informational/educational intents, only return entities if the category
+    makes sense for that intent type. For commercial intents, return product entities.
+    """
+    cat_lower = category_hint.lower()
+    for cat_key, entities in _VERIFIED_CATEGORIES.items():
+        if cat_key in cat_lower:
+            # For non-commercial intents, skip product entity injection
+            # unless the keyword is still commercial-ish
+            if intent in ("news", "informational", "educational", "trend_analysis", "investigative", "opinion"):
+                # Only return entities if the keyword is not just a brand/product search
+                # e.g. "bitcoin news" should not get password manager entities
+                # but "best password manager" should (it's still commercial)
+                # Check: if the keyword itself matches a product category, it's commercial intent
+                product_triggers = ['best', 'top', 'review', 'vs', ' versus ', 'alternative', 'compare']
+                if any(t in cat_lower for t in product_triggers):
+                    return entities
+                # For pure informational/news keywords (no product triggers), return empty
+                # so the system doesn't force product entities into non-product content
+                return []
+            return entities
+    return []
+
+
+def _extract_keyword(text: str) -> str:
+    # Order: most specific patterns first
+    for pat in [
+        r'Seed keyword:\s*"?([^"\n,]+)',
+        r'keyword:\s*"?([^"\n,]+)',
+        r'for:\s*"([^"]+)"',
+        r'for:\s*([^\n,]+)',
+        r'about:\s*"?([^"\n,]+)',
+        r'about:\s*([^\n,]+)',
+    ]:
+        m = re.search(pat, text[:400], re.IGNORECASE)
+        if m:
+            return m.group(1).strip()
+    # Last resort: extract from "Write a complete article about X" style
+    m = re.search(r'article\s+(?:about|on|for)\s+["\']?([^"\'\n,.]+)', text[:400], re.IGNORECASE)
+    if m:
+        return m.group(1).strip()
+    return "topic"
+
+# ── Intent Intelligence Engine ────────────────────────────
+# Module-level data and functions for search intent detection.
+# These are stateless and accessible for testing.
+
+_INTENT_ARCHITECTURES = {
+    "commercial": {
+        "label": "Buyer's Guide / Best-X",
+        "sections": [
+            "introduction", "serp_decon", "winner_spotlight", "why_we_picked",
+            "recommendation_matrix", "contradiction_resolution", "emotional_friction",
+            "competitor_section", "comparison", "expert_tips", "faq", "conclusion",
+        ],
+        "entity_types": ["products", "tools", "brands", "services", "software"],
+        "allows_comparison_table": True,
+        "allows_pricing": True,
+        "allows_winner": True,
+        "allows_migration": True,
+        "allows_onboarding": True,
+        "tone": "editorial skepticism",
+        "fail_if": ["fake comparisons", "no recommendation"],
+    },
+    "transactional": {
+        "label": "Buying Guide",
+        "sections": [
+            "introduction", "serp_decon", "winner_spotlight",
+            "pricing_breakdown", "competitor_section", "comparison",
+            "expert_tips", "faq", "conclusion",
+        ],
+        "entity_types": ["products", "tools", "brands", "services"],
+        "allows_comparison_table": True,
+        "allows_pricing": True,
+        "allows_winner": True,
+        "allows_migration": True,
+        "allows_onboarding": False,
+        "tone": "direct value comparison",
+    },
+    "comparative": {
+        "label": "Comparison / Versus",
+        "sections": [
+            "introduction", "serp_decon", "tradeoff_matrix", "competitor_section",
+            "decision_friction", "faq", "conclusion",
+        ],
+        "entity_types": ["products", "tools", "brands", "services"],
+        "allows_comparison_table": True,
+        "allows_pricing": True,
+        "allows_winner": True,
+        "allows_migration": True,
+        "allows_onboarding": False,
+        "tone": "neutral tradeoff analysis",
+    },
+    "news": {
+        "label": "News Analysis",
+        "sections": [
+            "introduction", "what_happened", "why_it_matters",
+            "analyst_disagreement", "hidden_context", "bullish_vs_bearish",
+            "what_coverage_misses", "signal_vs_noise", "historical_parallel",
+            "bottom_line",
+        ],
+        "entity_types": ["publications", "exchanges", "ETFs", "governments",
+                         "regulators", "institutions", "companies", "people",
+                         "macroeconomics", "markets"],
+        "allows_comparison_table": False,
+        "allows_pricing": False,
+        "allows_winner": False,
+        "allows_migration": False,
+        "allows_onboarding": False,
+        "tone": "financial editorial / newsroom analysis",
+        "fail_if": ["recommendation matrix", "pricing table", "best overall",
+                    "onboarding", "migration advice", "best option"],
+    },
+    "informational": {
+        "label": "Explainer",
+        "sections": [
+            "introduction", "direct_explanation", "misconceptions",
+            "practical_examples", "use_case_breakdown",
+            "common_mistakes", "nuanced_clarification", "faq", "conclusion",
+        ],
+        "entity_types": ["concepts", "protocols", "standards", "technologies",
+                         "terms", "definitions"],
+        "allows_comparison_table": False,
+        "allows_pricing": False,
+        "allows_winner": False,
+        "allows_migration": False,
+        "allows_onboarding": False,
+        "tone": "clear explanatory",
+        "fail_if": ["fake comparisons", "fake buying advice", "fake products",
+                    "pricing table", "best overall"],
+    },
+    "educational": {
+        "label": "Guide / Tutorial",
+        "sections": [
+            "introduction", "prerequisites", "step_by_step",
+            "concept_layering", "common_pitfalls", "practice_exercises",
+            "next_steps", "faq", "conclusion",
+        ],
+        "entity_types": ["concepts", "protocols", "technologies", "tools",
+                         "standards", "platforms"],
+        "allows_comparison_table": False,
+        "allows_pricing": False,
+        "allows_winner": False,
+        "allows_migration": False,
+        "allows_onboarding": True,
+        "tone": "progressive teaching",
+        "fail_if": ["comparison table", "pricing table", "best overall",
+                    "affiliate recommendation"],
+    },
+    "trend_analysis": {
+        "label": "Trend Analysis",
+        "sections": [
+            "introduction", "market_movement", "directional_signals",
+            "scenario_modeling", "second_order_effects",
+            "timing_risk", "uncertainty", "bottom_line",
+        ],
+        "entity_types": ["markets", "companies", "trends", "technologies",
+                         "macroeconomic", "indicators"],
+        "allows_comparison_table": False,
+        "allows_pricing": False,
+        "allows_winner": False,
+        "allows_migration": False,
+        "allows_onboarding": False,
+        "tone": "strategic foresight",
+    },
+    "investigative": {
+        "label": "Deep Investigation",
+        "sections": [
+            "introduction", "the_claim", "evidence_examination",
+            "conflicting_data", "expert_testimony", "our_findings",
+            "implications", "conclusion",
+        ],
+        "entity_types": ["companies", "people", "events", "data_sources",
+                         "publications", "studies"],
+        "allows_comparison_table": False,
+        "allows_pricing": False,
+        "allows_winner": False,
+        "allows_migration": False,
+        "allows_onboarding": False,
+        "tone": "investigative journalism",
+    },
+    "opinion": {
+        "label": "Editorial / Opinion",
+        "sections": [
+            "introduction", "thesis", "supporting_argument",
+            "counterargument", "why_counter_fails", "broader_implications",
+            "conclusion",
+        ],
+        "entity_types": ["companies", "people", "events", "ideas", "movements"],
+        "allows_comparison_table": False,
+        "allows_pricing": False,
+        "allows_winner": False,
+        "allows_migration": False,
+        "allows_onboarding": False,
+        "tone": "persuasive editorial",
+    },
+}
+
+_INTENT_SELF_EVAL_DIMS = {
+    "commercial": {
+        "dimensions": [
+            "decision_clarity", "recommendation_quality", "entity_quality",
+            "emotional_realism", "trust_engineering", "pricing_depth",
+            "comparison_depth", "attention_retention", "human_realism",
+            "narrative_continuity", "editorial_compression", "authenticity_illusion",
+            "decision_simplicity",
+        ],
+        "all_required_8": True,
+    },
+    "news": {
+        "dimensions": [
+            "timeliness", "narrative_clarity", "context_depth",
+            "bias_balance", "signal_extraction", "source_diversity",
+            "expert_voice", "originality",
+        ],
+        "all_required_8": True,
+    },
+    "informational": {
+        "dimensions": [
+            "explanation_quality", "example_quality", "misconception_coverage",
+            "clarity", "usefulness", "topical_authority", "seo_depth",
+            "originality",
+        ],
+        "all_required_8": True,
+    },
+    "educational": {
+        "dimensions": [
+            "comprehension_flow", "teaching_progression", "cognitive_load",
+            "practice_utility", "clarity", "usefulness", "originality",
+        ],
+        "all_required_8": True,
+    },
+    "comparative": {
+        "dimensions": [
+            "tradeoff_depth", "decision_friction", "contextual_winner",
+            "entity_quality", "comparison_depth", "trust_engineering",
+            "decision_clarity", "originality",
+        ],
+        "all_required_8": True,
+    },
+    "trend_analysis": {
+        "dimensions": [
+            "directional_insight", "uncertainty_honesty", "scenario_quality",
+            "timing_awareness", "second_order_depth", "market_context",
+            "originality",
+        ],
+        "all_required_8": True,
+    },
+}
+
+_INTENT_ENTITY_TYPES = {
+    "commercial": {"product", "tool", "brand", "service", "software", "company", "platform"},
+    "transactional": {"product", "tool", "brand", "service", "software", "company"},
+    "comparative": {"product", "tool", "brand", "service", "software", "company", "platform"},
+    "news": {"publication", "exchange", "etf", "government", "regulator", "institution",
+             "company", "person", "market", "index", "economy", "event", "report"},
+    "informational": {"concept", "protocol", "standard", "technology", "term", "definition",
+                      "principle", "framework", "methodology"},
+    "educational": {"concept", "protocol", "technology", "tool", "standard", "platform",
+                    "technique", "framework"},
+    "trend_analysis": {"market", "company", "technology", "trend", "indicator", "sector",
+                       "economy", "movement"},
+    "investigative": {"company", "person", "event", "source", "publication", "study",
+                      "document", "organization"},
+    "opinion": {"company", "person", "event", "idea", "movement", "publication"},
+    "navigational": {"company", "product", "website", "platform"},
+}
+
+def _detect_search_intent(keyword: str, serp_titles: list = None, snippets: list = None) -> str:
+    """Classify search intent using keyword + SERP signals.
+
+    Returns one of: commercial, transactional, informational, news,
+    educational, comparative, investigative, opinion, trend_analysis,
+    navigational.
+    """
+    kw_l = keyword.lower().strip()
+    all_titles = ' '.join(serp_titles or []).lower()
+    all_snippets = ' '.join(snippets or []).lower()
+    serp_text = all_titles + ' ' + all_snippets
+
+    # ── Signal weights ──
+    signals = {
+        'navigational': 0,
+        'transactional': 0,
+        'commercial': 0,
+        'comparative': 0,
+        'news': 0,
+        'informational': 0,
+        'educational': 0,
+        'investigative': 0,
+        'opinion': 0,
+        'trend_analysis': 0,
+    }
+
+    # ── Navigational signals ──
+    if any(w in kw_l for w in ['login', 'sign in', 'sign up', 'official', 'website', 'homepage', 'download ']):
+        # Demote navigational if triggered by passive words (website/homepage) AND commercial exists
+        passive_nav = any(w in kw_l for w in ['website', 'homepage'])
+        has_commercial = any(w in kw_l for w in ['best', 'top', 'review', 'alternative', 'recommended', 'rating', 'ranked', 'comparison'])
+        if passive_nav and has_commercial:
+            signals['navigational'] += 1  # weak signal
+        else:
+            signals['navigational'] += 5
+
+    # ── Transactional signals ──
+    tx_keywords = ['buy', 'order', 'price', 'coupon', 'deal', 'discount', 'subscribe', 'pricing',
+                    'purchase', 'cost', 'cheap', 'affordable', 'shop', 'store']
+    if any(w in kw_l for w in tx_keywords):
+        signals['transactional'] += 3
+
+    # ── Commercial / best-X signals ──
+    commercial_triggers = ['best', 'top', 'review', 'alternative', 'recommended', 'rating',
+                           'ranked', 'comparison', 'pick']
+    if any(w in kw_l for w in commercial_triggers):
+        signals['commercial'] += 3
+
+    # ── Comparative signals ──
+    if any(p in kw_l for p in [' vs ', ' versus ', ' or ', 'compare', 'better', 'difference between',
+                                'which', 'should i']):
+        signals['comparative'] += 3
+    # SERP titles with comparison language boost comparative
+    if re.search(r'\b(vs|versus|or|better\bthan)\b', serp_text):
+        signals['comparative'] += 1
+
+    # ── News signals ──
+    # Keyword time-signals
+    if any(w in kw_l for w in ['news', 'today', 'this week', 'breaking', 'latest', 'update',
+                                'just happened', 'what happened', 'announced', 'launch',
+                                'new', 'report', 'happening']):
+        signals['news'] += 3
+    # SERP freshness: check for time-sensitive titles
+    news_serp_patterns = [
+        r'\b(just|today|yesterday|this (week|month|morning|hour))\b',
+        r'\b(new|announced|launched|released|unveiled)\b',
+        r'\b(breaking|report|update|latest)\b',
+        r'\b(2026|2025)\b',  # recent year mentions in titles suggest timeliness
+        r'\b(just|now|coming|next)\b',
+    ]
+    for pat in news_serp_patterns:
+        if re.search(pat, serp_text):
+            signals['news'] += 1
+    # High volume of date-stamped titles = news
+    date_count = len(re.findall(r'\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\w*\s+\d{1,2},?\s+\d{4}\b', serp_text))
+    if date_count >= 2:
+        signals['news'] += 2
+
+    # ── Informational signals ──
+    info_triggers = ['what is', 'what are', 'what does', 'how to', 'how does', 'how do',
+                     'why is', 'why does', 'meaning', 'definition', 'explain', 'example',
+                     'guide', 'tutorial', 'introduction', 'overview', 'basics', 'crash course']
+    if any(w in kw_l for w in info_triggers):
+        signals['informational'] += 3
+
+    # ── Educational signals ──
+    edu_triggers = ['learn', 'understand', 'master', 'certification', 'course', 'lesson',
+                    'curriculum', 'syllabus', 'training', 'workshop', 'class',
+                    'beginners', 'step by step', 'steps', 'guide for', 'complete guide',
+                    'tutorial']
+    if any(w in kw_l for w in edu_triggers):
+        signals['educational'] += 3
+    # SERP titles with educational language boost educational
+    if any(et in serp_text for et in ['tutorial', 'beginner', 'step-by-step', 'getting started', 'guide']):
+        signals['educational'] += 2
+
+    # ── Disambiguation: "how to X" where X is a tool → educational over informational ──
+    if 'how to' in kw_l:
+        # If keyword has a specific tool/entity name AND SERP has tutorial language, prefer educational
+        has_tool_name = len(kw_l.split()) >= 4  # e.g. "how to use obs studio" = 5 words
+        if has_tool_name and any(et in serp_text for et in ['tutorial', 'getting started', 'step-by-step']):
+            signals['educational'] += 2
+            signals['informational'] = max(0, signals.get('informational', 0) - 1)
+
+    # ── Investigative signals ──
+    inv_triggers = ['why', 'investigation', 'exposed', 'truth about', 'inside', 'deep dive',
+                    'analysis', 'reality', 'what really', 'behind', 'uncovered']
+    if any(w in kw_l for w in inv_triggers):
+        signals['investigative'] += 2
+
+    # ── Opinion signals ──
+    op_triggers = ['opinion', 'thoughts on', 'think about', 'view on', 'perspective',
+                   'in my opinion', 'why i', 'why we', 'editorial']
+    if any(w in kw_l for w in op_triggers):
+        signals['opinion'] += 3
+
+    # ── Trend analysis signals ──
+    trend_triggers = ['future of', 'trend', 'prediction', 'forecast', 'next big',
+                      'emerging', 'state of', 'landscape', 'evolution', 'shift',
+                      'movement', 'direction', 'will', 'growth', 'opportunity']
+    if any(w in kw_l for w in trend_triggers):
+        signals['trend_analysis'] += 3
+    # SERP titles with forward-looking language
+    if re.search(r'\b(future|next|emerging|prediction|trend|shift|movement)\b', serp_text):
+        signals['trend_analysis'] += 1
+
+    # ── Fallback: if keyword has no product/commercial signals but SERP is entity-dense ──
+    # A keyword like "bitcoin news" has neither commercial nor info triggers — SERP must decide
+    is_plain_query = all(v == 0 for v in signals.values())
+    if is_plain_query or max(signals.values()) == 0:
+        # Look at SERP for clues
+        if any(w in serp_text for w in ['price', 'buy', 'deal', 'discount']):
+            signals['transactional'] += 1
+        if any(w in serp_text for w in ['vs', 'versus', 'better', 'comparison', 'best']):
+            signals['commercial'] += 1
+        if any(w in serp_text for w in ['news', 'report', 'says', 'announced', 'today']):
+            signals['news'] += 2
+        if any(w in serp_text for w in ['guide', 'tutorial', 'how to', 'what is']):
+            signals['informational'] += 1
+        # News often has date patterns and publication-heavy SERP
+        pub_count = sum(1 for w in ['bloomberg', 'reuters', 'cnbc', 'cnn', 'bbc', 'axios',
+                                     'recode', 'the verge', 'techcrunch', 'coindesk',
+                                     'wsj', 'nytimes', 'forbes', 'fortune']
+                        if w in serp_text)
+        if pub_count >= 2:
+            signals['news'] += 2
+
+    # ── Guard: commercial/transactional keyword triggers override SERP noise ──
+    # If keyword explicitly has "best", "top", "review" — cap news so commercial wins
+    if any(w in kw_l for w in ['best', 'top', 'review', 'alternative', 'recommended', 'rating']):
+        signals['news'] = min(signals['news'], 1)
+    # If keyword explicitly asks for price/buy — cap informational
+    if any(w in kw_l for w in ['buy', 'price', 'cost', 'cheap', 'deal']):
+        signals['informational'] = min(signals['informational'], 1)
+
+    # Pick the highest scoring intent
+    sorted_intents = sorted(signals.items(), key=lambda x: -x[1])
+    top_intent = sorted_intents[0][0]
+
+    # If tied or all zeros, default to commercial (the original behavior)
+    if top_intent == 'navigational':
+        return 'navigational'
+    if sorted_intents[0][1] == sorted_intents[1][1] if len(sorted_intents) > 1 else False:
+        # Tiebreaker: commercial beats informational, news beats everything at zero
+        if all(v == 0 for v in signals.values()):
+            return 'commercial'
+        # Pick first non-zero
+        for intent, score in sorted_intents:
+            if score > 0:
+                return intent
+        return 'commercial'
+
+    return top_intent
+
+
+def _build_dynamic_sections(kw: str, intent: str, headings: list, entities: list, search_results: list) -> list:
+    """Build sections matching the intent architecture.
+
+    Each intent has a predefined section blueprint in _INTENT_ARCHITECTURES.
+    For intents without a custom blueprint (fallback), uses a generic structure.
+    """
+    architecture = _INTENT_ARCHITECTURES.get(intent, _INTENT_ARCHITECTURES["commercial"])
+    blueprint = architecture["sections"]
+
+    section_titles = {
+        # Commercial
+        "introduction": "Introduction",
+        "serp_decon": "Phase 1: SERP Deconstruction",
+        "winner_spotlight": "Our Top Pick",
+        "why_we_picked": "Why We Picked This",
+        "recommendation_matrix": "Recommendation Matrix: Who Wins in Each Category",
+        "contradiction_resolution": "Contradiction Resolution: Where Reviewers Disagree",
+        "emotional_friction": "Common Concerns, Straight Answers",
+        "competitor_section": "",  # Dynamic - populated from SERP headings
+        "comparison": "Comparison of Key Options",
+        "expert_tips": "Expert Tips and Best Practices",
+        "faq": "Frequently Asked Questions",
+        "conclusion": "Final Verdict",
+        # News
+        "what_happened": "What Happened",
+        "why_it_matters": "Why It Matters",
+        "analyst_disagreement": "What Analysts Disagree On",
+        "hidden_context": "Hidden Context Most Coverage Misses",
+        "bullish_vs_bearish": "Bullish vs. Bearish: Interpreting the Signal",
+        "what_coverage_misses": "Where Most Coverage Gets It Wrong",
+        "signal_vs_noise": "Signal vs. Noise: Cutting Through the Narrative",
+        "historical_parallel": "Historical Parallels Worth Watching",
+        "bottom_line": "The Bottom Line",
+        # Informational
+        "direct_explanation": "What It Is and Why It Matters",
+        "misconceptions": "Common Misconceptions",
+        "practical_examples": "Practical Examples",
+        "use_case_breakdown": "Use Case Breakdown",
+        "common_mistakes": "Common Mistakes to Avoid",
+        "nuanced_clarification": "A More Nuanced View",
+        # Educational
+        "prerequisites": "What You Need to Know First",
+        "step_by_step": "Step-by-Step Guide",
+        "concept_layering": "Building on What We Just Learned",
+        "common_pitfalls": "Common Pitfalls and How to Avoid Them",
+        "practice_exercises": "Practice Exercises",
+        "next_steps": "Next Steps",
+        # Comparative
+        "tradeoff_matrix": "The Tradeoff Matrix",
+        "decision_friction": "The Real Decision Friction",
+        # Trend Analysis
+        "market_movement": "Market Movement and Momentum",
+        "directional_signals": "Directional Signals",
+        "scenario_modeling": "Scenario Modeling: What Could Happen",
+        "second_order_effects": "Second-Order Effects",
+        "timing_risk": "Timing Risk",
+        "uncertainty": "What We Don't Know Yet",
+        # Investigative
+        "the_claim": "The Claim",
+        "evidence_examination": "Examining the Evidence",
+        "conflicting_data": "Conflicting Data Points",
+        "expert_testimony": "What Experts Say",
+        "our_findings": "Our Findings",
+        "implications": "Broader Implications",
+        # Opinion
+        "thesis": "The Core Argument",
+        "supporting_argument": "Why This View Holds Up",
+        "counterargument": "The Other Side",
+        "why_counter_fails": "Why the Counterargument Falls Short",
+        "broader_implications": "Broader Implications",
+    }
+
+    sections = []
+
+    for sec_type in blueprint:
+        if sec_type == "competitor_section":
+            # Populate from competitor headings (only for commercial/comparative)
+            if intent in ("commercial", "transactional", "comparative"):
+                # Extract H2s from competitor pages
+                common_h2s = [h["text"] for h in headings if h["level"] == "H2"]
+                h2_freq = {}
+                for h2 in common_h2s:
+                    h2_freq[h2] = h2_freq.get(h2, 0) + 1
+                top_h2s = [h for h, c in sorted(h2_freq.items(), key=lambda x: -x[1]) if c >= 1][:8]
+                seen_h2s = set()
+                for h2 in top_h2s:
+                    short = h2[:60]
+                    if short not in seen_h2s:
+                        seen_h2s.add(short)
+                        sections.append({"type": "competitor_section", "title": h2})
+            continue
+
+        title = section_titles.get(sec_type, sec_type.replace("_", " ").title())
+        # Intent-aware conclusion title
+        if sec_type == "conclusion":
+            if intent == "news":
+                title = "The Bottom Line"
+            elif intent in ("informational", "educational"):
+                title = "What You Have Learned"
+            elif intent == "trend_analysis":
+                title = "Strategic Outlook"
+            elif intent == "comparative":
+                title = "Final Recommendation"
+            else:
+                title = "Final Verdict"
+        sections.append({"type": sec_type, "title": title})
+
+    # Add dynamic sections that aren't in blueprint
+    # For commercial: if verified entities exist, inject competitor sections from SERP
+    if intent in ("commercial", "transactional", "comparative") and search_results:
+        # Already handled above for competitor_section in blueprint
+        pass
+
+    # Ensure FAQ and conclusion for intents that need them
+    has_faq = any(s["type"] == "faq" for s in sections)
+    if intent in ("commercial", "informational", "educational") and not has_faq:
+        sections.append({"type": "faq", "title": "Frequently Asked Questions"})
+
+    # Deduplicate by title
+    seen_titles = set()
+    unique_sections = []
+    for s in sections:
+        short = s["title"][:60]
+        if short not in seen_titles:
+            seen_titles.add(short)
+            unique_sections.append(s)
+    return unique_sections
+
+
+def _call_ai_writer(system_prompt: str, user_prompt: str, stream: bool = False) -> str:
+    """
+    Call a real AI model to write article content.
+    Falls back to local generation if no API key is available.
+    Tries: Anthropic -> Google (Gemini) -> Groq (Llama) -> local fallback.
+    """
+    if API_KEYS.get("anthropic"):
+        try:
+            return _call_anthropic("claude-sonnet-4-5", system_prompt, user_prompt, stream=False)
+        except Exception as e:
+            print(c("yellow", f"  ⚠ Anthropic failed: {e}. Trying Google..."))
+
+    if API_KEYS.get("google"):
+        try:
+            return _call_google("gemini-2.0-flash", system_prompt, user_prompt, stream=False)
+        except Exception as e:
+            print(c("yellow", f"  ⚠ Google failed: {e}. Trying Groq..."))
+
+    if API_KEYS.get("groq"):
+        try:
+            return _call_groq("llama-3.3-70b-versatile", system_prompt, user_prompt, stream=False)
+        except Exception as e:
+            print(c("yellow", f"  ⚠ Groq failed: {e}. Falling back to local..."))
+
+    return ""
+
+
+def _call_local(system: str, user: str, stream: bool) -> str:
+    kw = _extract_keyword(user)
+    s_lower = (system + " " + user).lower()
+
+    # Check order: more specific matches first
+    is_json_request = "return only valid json" in s_lower or "return a json" in s_lower or "return json" in s_lower
+    is_article = "write a complete" in s_lower
+    is_ctr = "ctr" in s_lower or "click-through" in s_lower
+    is_cluster = "keyword cluster" in s_lower or "topic cluster" in s_lower
+    is_calendar = "calendar" in s_lower and "month" in s_lower
+    is_authority = "authority" in s_lower and "score" in s_lower
+    is_competitor = "competitor" in s_lower or "competitive" in s_lower
+    is_strategy = "strategy" in s_lower and ("return json" in s_lower or "return a json" in s_lower)
+    # is_json is a broader fallback for detect_json mode
+    is_json = is_json_request and not is_article
+    print(f"  [TRACE] kw={kw!r} is_json={is_json} is_article={is_article} is_competitor={is_competitor}")
+    print(f"  [TRACE] reaching at 1100")
+
+    # ── Web helpers ──────────────────────────────────────
+    def _web_search(query: str, max_results: int = 5) -> list:
+        """Search the web and return (title, snippet, url) tuples."""
+        results = []
+        try:
+            import urllib.parse
+            encoded = urllib.parse.quote(query)
+            url = f"https://html.duckduckgo.com/html/?q={encoded}"
+            req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                html = resp.read().decode("utf-8", errors="replace")
+            for m in re.finditer(r'<a[^>]+class="result__a"[^>]*href="([^"]*)"[^>]*>(.*?)</a>', html, re.DOTALL):
+                href, title_raw = m.group(1), re.sub(r'<[^>]+>', '', m.group(2)).strip()
+                if len(results) >= max_results:
+                    break
+                # Get snippet from the next sibling
+                snippet_m = re.search(r'<a[^>]+class="result__snippet"[^>]*>(.*?)</a>', html[m.end():], re.DOTALL)
+                snippet = re.sub(r'<[^>]+>', '', snippet_m.group(1)).strip() if snippet_m else ""
+                if title_raw and href:
+                    results.append((title_raw, snippet, href))
+        except Exception:
+            pass
+        return results
+
+    def _fetch_page_html(url: str, max_chars: int = 8000) -> str:
+        """Fetch raw HTML from a URL."""
+        try:
+            req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                html = resp.read().decode("utf-8", errors="replace")
+            return html[:max_chars]
+        except Exception:
+            return ""
+
+    def _fetch_page_text(url: str, max_chars: int = 5000) -> str:
+        """Fetch text content from a URL (extracted from HTML)."""
+        html = _fetch_page_html(url, max_chars * 2)
+        text = re.sub(r'<[^>]+>', ' ', html)
+        text = re.sub(r'\s+', ' ', text).strip()
+        return text[:max_chars]
+
+    def _serp_search(query: str) -> tuple:
+        """Search the web, return (results, competitor_pages)."""
+        results = _web_search(query, max_results=10)
+        competitor_pages = []
+        for title, snippet, url in results[:5]:
+            html = _fetch_page_html(url)
+            text = _fetch_page_text(url)
+            competitor_pages.append({"url": url, "title": title, "snippet": snippet, "html": html, "text": text})
+        return results, competitor_pages
+
+    def _extract_snippet_entities(results: list) -> list:
+        """Extract potential entity names from search snippets, validated and scored."""
+        entities = []
+        seen = set()
+        for _, snippet, _ in results:
+            if not snippet:
+                continue
+            for word in re.findall(r'[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*', snippet):
+                lower = word.lower()
+                if len(word) > 3 and lower not in seen and lower not in _REJECT_WORDS:
+                    seen.add(lower)
+                    # Quick score check — reject generics but allow brands
+                    score = _score_entity(word, keyword=kw)
+                    if score >= 20 or lower in _BRAND_CORPUS:
+                        entities.append({"name": word, "type": "snippet_entity", "frequency": 1, "score": score})
+        entities.sort(key=lambda e: e.get("score", 0), reverse=True)
+        return entities[:15]
+
+    def _extract_entities(text: str) -> list:
+        """Extract candidate entities from raw text, scored and filtered."""
+        entities = []
+        seen = set()
+        for m in re.finditer(r'([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+){0,3})', text):
+            name = m.group(1).strip()
+            lower = name.lower()
+            if len(name) > 3 and lower not in seen and name not in _BRAND_CORPUS:
+                seen.add(lower)
+                validated = _validate_entity(name, keyword=kw)
+                if validated:
+                    score = _score_entity(validated, keyword=kw)
+                    if score >= 20:
+                        entities.append({
+                            "name": validated, "type": "extracted_entity",
+                            "frequency": 1, "score": score,
+                        })
+        # Sort by score descending, keep top 15
+        entities.sort(key=lambda e: e["score"], reverse=True)
+        return entities[:15]
+
+    def _extract_headings(html: str) -> list:
+        """Extract H2/H3 headings from HTML."""
+        headings = []
+        for tag in ("H2", "H3"):
+            for m in re.finditer(rf'<{tag}[^>]*>(.*?)</{tag}>', html, re.IGNORECASE | re.DOTALL):
+                text = re.sub(r'<[^>]+>', '', m.group(1)).strip()
+                if len(text) > 5:
+                    headings.append({"level": tag, "text": text})
+        return headings
+
+    def _build_comparison_table(entities: list, kw: str) -> str:
+        kw_naked = re.sub(r'^(best|top|free)\s+', '', kw.lower(), flags=re.IGNORECASE).strip()
+        # Try verified entities first
+        verified = _get_verified_entities(kw_naked)
+        if verified:
+            rows = ""
+            for v in verified[:6]:
+                name_e = v["name"].replace("<", "&lt;")
+                desc_e = v["description"].replace("<", "&lt;")
+                pricing_e = v["pricing"].replace("<", "&lt;")
+                strengths = "; ".join(v["strengths"][:2]).replace("<", "&lt;")
+                platforms = ", ".join(v["platforms"])
+                rows += f"<tr><td><strong>{name_e}</strong></td><td>{desc_e}</td><td>{pricing_e}</td><td>{platforms}</td><td>{strengths}</td></tr>\n"
+            return f"""<h2>Comparison of Top Options</h2>
+<table><thead><tr><th>Option</th><th>Description</th><th>Pricing</th><th>Platform</th><th>Key Strengths</th></tr></thead>
+<tbody>{rows}</tbody></table>"""
+
+        # Fallback: use SERP entities with best-effort data
+        skip_words = {'statistic', 'pcmag', 'zdnet', 'wirecutter', 'guru99', 'review', 'guide', 'best', 'top', 'free'}
+        relevant = [e for e in entities if e["name"].lower() not in skip_words and e["name"].lower() not in kw_naked and e.get("frequency", 0) > 0 and len(e["name"]) > 3]
+        relevant = relevant[:6]
+        if len(relevant) < 2:
+            return ""
+        rows = ""
+        for e in relevant:
+            name = e["name"].replace("<", "&lt;")
+            rows += f"<tr><td><strong>{name}</strong></td><td>Key option in the {kw_naked} space</td><td>Check official site</td><td>Varies</td><td>See details</td></tr>\n"
+        return f"""<h2>Comparison of Key Options</h2>
+<table><thead><tr><th>Option</th><th>Description</th><th>Pricing</th><th>Platform</th><th>Notes</th></tr></thead>
+<tbody>{rows}</tbody></table>"""
+
+    def _build_faq(kw: str, intent: str, headings: list) -> str:
+        kw_l = kw.lower()
+        kw_naked_faq = re.sub(r'^(best|top|free)\s+', '', kw_l, flags=re.IGNORECASE).strip()
+        verified_for_faq = _get_verified_entities(kw_l)
+        if verified_for_faq:
+            if intent in ("educational", "informational"):
+                faqs = [
+                    (f"What exactly is {kw_naked_faq}?", f"{verified_for_faq[0]['name']} is a leading solution in this space. It works by {verified_for_faq[0]['strengths'][0].lower()}. The core concepts are straightforward once you understand the basic principles."),
+                    (f"How does {kw_naked_faq} actually work?", f"The underlying mechanism involves {verified_for_faq[0]['description'][:100]}. Understanding this helps you use it more effectively and troubleshoot when things go wrong."),
+                    (f"What do I need to get started with {kw_naked_faq}?", f"Start with {verified_for_faq[0]['name']} ({verified_for_faq[0]['pricing']}) — it offers the best balance of {verified_for_faq[0]['strengths'][0].lower()} and ease of use. You will need {verified_for_faq[0]['platforms'][0]} to begin."),
+                ]
+            elif intent == "news":
+                faqs = [
+                    (f"What happened with {kw_naked_faq} and why does it matter?", f"The latest developments center on {verified_for_faq[0]['name']}. This matters because it signals a shift in how {verified_for_faq[0]['target_user']} interacts with the space."),
+                    (f"Who is most affected by these {kw_naked_faq} developments?", f"The primary stakeholders include users of {verified_for_faq[0]['name']} and others in the ecosystem. The secondary effects may reach adjacent markets as well."),
+                    (f"What comes next for {kw_naked_faq}?", f"Based on current trajectories, the next phase will likely involve {verified_for_faq[0]['strengths'][0].lower()} becoming more standardized. Watch for regulatory responses and institutional adoption patterns."),
+                ]
+            else:
+                faqs = [
+                    (f"What is the best {kw_naked_faq} option?", f"The best choice depends on your needs. {verified_for_faq[0]['name']} is the strongest all-around pick for most users ({verified_for_faq[0]['pricing']}, {verified_for_faq[0]['strengths'][0]}). {verified_for_faq[1]['name']} is better if {verified_for_faq[1]['target_user']}."),
+                    (f"How much does {kw_naked_faq} cost?", f"Options range from {verified_for_faq[0]['pricing']} to {verified_for_faq[-1]['pricing']}. Free options exist, but premium tools typically offer better support and more features."),
+                    (f"Are there free {kw_naked_faq} options?", "Yes, some options offer free tiers with limited features, while premium tools typically charge a subscription. Consider your actual usage before paying."),
+                    (f"What should I look for in {kw_naked_faq}?", f"Focus on three things: does it support your workflow, does it fit your budget long-term, and does it integrate with tools you already use. {verified_for_faq[0]['name']} excels at {verified_for_faq[0]['strengths'][0].lower()}."),
+                ]
+        else:
+            if intent == "educational":
+                faqs = [
+                    (f"What do I need to know before starting {kw}?", f"No prior experience is required, but you should be comfortable with basic computer skills. The guide builds progressively — each section assumes you have absorbed the previous one. Take your time and practice along the way."),
+                    (f"How long does it take to learn {kw}?", f"The learning curve varies by individual, but most people grasp the core concepts within a few focused sessions. Mastery comes from regular practice and real-world application — expect to spend several weeks to become proficient."),
+                    (f"What are the most common mistakes when learning {kw}?", f"The most common mistake is trying to learn everything at once. Focus on one concept at a time, practice it until it feels natural, then move to the next. Also, avoid skipping foundational steps — they exist for a reason."),
+                    (f"What tools or resources do I need for {kw}?", f"This guide covers everything you need. Start with the prerequisites section, gather any required tools, and follow the step-by-step progression. Most tools mentioned are freely available."),
+                    (f"Can I learn {kw} on my own?", f"Absolutely. This guide is designed for self-directed learning. The key is consistent practice and building real projects — not just reading. Use the practice exercises to test your understanding."),
+                ]
+            elif intent == "news":
+                faqs = [
+                    (f"What is the latest development in {kw}?", f"The most recent development signals a shift in how this space is evolving. Our analysis breaks down what happened, why it matters, and what it means for stakeholders."),
+                    (f"Why does {kw} matter right now?", f"This matters because it represents a change in the underlying dynamics. Understanding the context helps you interpret future developments and make informed decisions."),
+                    (f"What do analysts disagree on regarding {kw}?", f"Analysts differ on the magnitude and timeline of impact. Some see this as a structural shift; others view it as a cyclical event. Our analysis presents both perspectives with supporting evidence."),
+                    (f"Who is most affected by {kw}?", f"The primary impact falls on direct participants in this space, but secondary effects ripple through adjacent sectors and markets. The full implications may take months to unfold."),
+                ]
+            elif intent == "informational":
+                faqs = [
+                    (f"What exactly is {kw}?", f"It is a concept/technology/framework that helps [do something important]. At its core, it works by [simple mechanism]. Understanding this is the foundation for everything else in this guide."),
+                    (f"How does {kw} actually work?", f"The basic mechanism is straightforward once broken down. This guide explains it step by step, starting from first principles and building up to practical applications."),
+                    (f"What are the most common misconceptions about {kw}?", f"The most common misconception is that it is more complex than it actually is. Another widespread misunderstanding involves [common wrong assumption]. We address both in detail."),
+                    (f"Why does {kw} matter in practice?", f"It matters because it solves a real problem: [problem statement]. Understanding it helps you make better decisions and avoid costly mistakes."),
+                ]
+            elif intent == "trend_analysis":
+                faqs = [
+                    (f"What are the key trends in {kw} right now?", f"We identify several directional signals that suggest where this space is headed. Each signal is evaluated for strength, durability, and potential impact."),
+                    (f"What are the biggest risks in {kw}?", f"The primary risks include timing uncertainty — knowing when, not just what — and second-order effects that could alter expected outcomes. We model multiple scenarios to account for these."),
+                    (f"When should I act on {kw} trends?", f"Timing depends on your position and risk tolerance. Early movers capture more upside but face more uncertainty. Late movers have more data but less opportunity. Our analysis helps you find your window."),
+                    (f"How reliable are {kw} predictions?", f"Predictions are inherently uncertain. We rate each trend by confidence level and highlight what would change our assessment. The goal is not certainty — it is better preparedness."),
+                ]
+            else:
+                faqs = [
+                    (f"What is the best way to approach {kw}?", f"Start by identifying your specific requirements. The right solution depends on your workflow, budget, and technical comfort level. We recommend testing at least three options before committing."),
+                    (f"How much does {kw} typically cost?", f"Pricing varies significantly. Free and open-source options exist, but premium tools charge anywhere from a one-time fee to monthly subscriptions. Always account for total cost of ownership over 2-3 years."),
+                    (f"Is {kw} worth it in 2026?", f"For most users, yes — but only if you choose an option that aligns with your actual use case. The most expensive option is rarely the best, and free options can be surprisingly capable."),
+                ]
+                if intent in ("commercial", "transactional", "comparative"):
+                    faqs.insert(1, (f"What should I look for when choosing {kw}?", "Prioritize features that match your actual workflow, not the ones marketing highlights. Read negative reviews — they reveal real pain points. Test with a trial before paying."))
+                    faqs.insert(2, (f"Are there free alternatives for {kw}?", "Yes, most categories have free or open-source alternatives. They may lack premium support or advanced features but can be excellent starting points, especially for individuals or small teams."))
+        items = ""
+        for q, a in faqs:
+            esc_q = q.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+            esc_a = a.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+            items += f"""<div itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">
+<h3 itemprop="name">{esc_q}</h3>
+<div itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer">
+<div itemprop="text">{esc_a}</div>
+</div></div>\n"""
+        return f"""<h2>Frequently Asked Questions</h2>
+<div itemscope itemtype="https://schema.org/FAQPage">
+{items}</div>"""
+
+    def _build_json_ld(kw: str, entities: list, faq_qas: list) -> str:
+        kw_title = kw[0].upper() + kw[1:] if kw else kw
+        kw_naked = re.sub(r'^(best|top|free)\s+', '', kw, flags=re.IGNORECASE).strip()
+        today_str = _dt_router.now().strftime("%Y-%m-%d")
+        author = SETTINGS.get("author_name", "James Whitfield")
+        site_name = SETTINGS.get("site_name", author)
+        meta_desc = f"Complete guide to {kw_naked}. Expert analysis, comparisons, and actionable advice for 2026."
+        if _get_verified_entities(kw_naked):
+            verified_names = ", ".join(v["name"] for v in _get_verified_entities(kw_naked)[:4])
+            meta_desc = f"Compare the top {kw_naked} options: {verified_names}. Pricing, features, strengths, and weaknesses — everything you need to choose."
+        mention_items = ""
+        # Prefer verified entities for mentions
+        verified_for_ld = _get_verified_entities(kw_naked)
+        mention_sources = verified_for_ld[:8] if verified_for_ld else entities[:6]
+        for e in mention_sources:
+            name = e["name"] if isinstance(e, dict) else e
+            skip_mentions = {'statistic', 'pcmag', 'zdnet', 'wirecutter', 'guru99', 'review', 'guide', 'best', 'top'}
+            if isinstance(name, str) and any(s in name.lower() for s in skip_mentions):
+                continue
+            name_esc = name.replace("&", "&amp;").replace("<", "&lt;")
+            mention_items += f'        {{ "@type": "Thing", "name": "{name_esc}" }},\n'
+        faq_items = ""
+        if not faq_qas:
+            faq_qas = [
+                (f"What is the best {kw_naked} option?", f"After thorough testing of the top options, the best choice depends on your specific needs. We recommend starting with a free tier or trial to evaluate before committing to a paid plan."),
+                (f"How much does {kw_naked} cost?", f"Pricing ranges widely from free open-source options to premium subscriptions. Most tools offer a free tier with limited features and paid plans starting around $10-15/month for full functionality."),
+                (f"Are there free alternatives for {kw_naked}?", f"Yes, several free options exist. Free tiers typically include basic features with limitations on usage frequency, number of items, or supported platforms. They are great for personal use or evaluation."),
+                (f"Which {kw_naked} is easiest to use?", f"Ease of use varies by tool. Generally, tools with browser extensions and minimal setup are the most accessible. Look for tools that offer onboarding tutorials and responsive customer support."),
+                (f"How do I choose the right {kw_naked}?", f"Start by identifying your primary use case, budget, and required platforms. Test 2-3 options with free trials, focusing on your daily workflow. Read recent reviews for real-world reliability data."),
+                (f"Is {kw_naked} worth it in 2026?", f"For most users, yes. The right tool saves time and improves results. The key is matching features to your actual needs rather than buying the most expensive option."),
+            ]
+        for q, a in faq_qas:
+            eq = q.replace("&", "&amp;").replace('"', "'")
+            ea = a.replace("&", "&amp;").replace('"', "'")
+            faq_items += f'        {{ "@type": "Question", "name": "{eq}", "acceptedAnswer": {{ "@type": "Answer", "text": "{ea}" }} }},\n'
+        return f"""<script type="application/ld+json">
+{{
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": "{kw_title}: Complete Guide (2026)",
+    "description": "{meta_desc}",
+    "author": {{ "@type": "Person", "name": "{author}" }},
+    "publisher": {{ "@type": "Organization", "name": "{site_name}" }},
+    "datePublished": "{today_str}",
+    "dateModified": "{today_str}",
+    "about": {{ "@type": "Thing", "name": "{kw_title}" }},
+    "mentions": [
+{mention_items}    ]
+}}
+</script>
+<script type="application/ld+json">
+{{
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+{faq_items}    ]
+}}
+</script>"""
+
+
+def _wrap_professional_article(content: str, kw: str, kw_title: str, json_ld: str, author_name: str = "James Whitfield") -> str:
+    """Wrap article body content in the professional reference-style template."""
+    from datetime import datetime
+    today_str = datetime.now().strftime("%B %d, %Y")
+    kw_slug = kw.lower().replace(" ", "-")[:80]
+
+    # Extract H2 headings for Table of Contents
+    toc_items = []
+    for m in re.finditer(r'<h2[^>]*id=["\']([^"\']*)["\'][^>]*>(.*?)</h2>', content, re.IGNORECASE | re.DOTALL):
+        toc_items.append((m.group(1), re.sub(r'<[^>]+>', '', m.group(2)).strip()))
+    if not toc_items:
+        for m in re.finditer(r'<h2[^>]*>(.*?)</h2>', content, re.IGNORECASE | re.DOTALL):
+            text = re.sub(r'<[^>]+>', '', m.group(1)).strip()
+            id_ = text.lower().replace(" ", "-").replace("?", "").replace("&", "and")[:60]
+            content = content.replace(m.group(0), f'<h2 id="{id_}"{m.group(0)[3:]}' if 'id=' not in m.group(0) else m.group(0), 1)
+            if 'id=' not in m.group(0)[:10]:
+                content = content.replace(m.group(0), f'<h2 id="{id_}">{text}</h2>')
+            toc_items.append((id_, text))
+
+    toc_html = ""
+    if toc_items:
+        toc_html = '<div class="toc"><h3>Table of Contents</h3>\n'
+        for id_, text in toc_items:
+            toc_html += f'<a href="#{id_}">{text}</a>\n'
+        toc_html += '</div>\n'
+
+    word_count = len(content.split())
+    read_time = max(1, round(word_count / 210))
+
+    site_url = SETTINGS.get("site_url", "https://yoursite.com")
+
+    return f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{kw_title}: Complete Guide & Best Picks (2026)</title>
+    <meta name="description" content="{kw_title} guide. Expert reviews, pricing comparisons, features, and performance benchmarks for 2026.">
+    <link rel="canonical" href="{site_url}/{kw_slug}">
+    <meta name="twitter:card" content="summary_large_image">
+    <style>
+        * {{ margin: 0; padding: 0; box-sizing: border-box; }}
+        body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.8; color: #1a1a2e; background: #f0f2f5; padding: 20px; }}
+        .container {{ max-width: 820px; margin: 0 auto; background: #fff; padding: 45px; border-radius: 12px; box-shadow: 0 2px 20px rgba(0,0,0,0.08); }}
+        h1 {{ font-size: 2.1em; color: #1a1a2e; margin-bottom: 8px; line-height: 1.3; font-weight: 700; }}
+        .meta {{ color: #666; font-size: 0.9em; margin-bottom: 30px; border-bottom: 1px solid #eee; padding-bottom: 15px; display: flex; gap: 15px; flex-wrap: wrap; }}
+        .meta span {{ display: inline-flex; align-items: center; gap: 4px; }}
+        h2 {{ font-size: 1.5em; color: #16213e; margin-top: 40px; margin-bottom: 15px; padding-left: 12px; border-left: 4px solid #0f3460; }}
+        h3 {{ font-size: 1.2em; color: #0f3460; margin-top: 25px; margin-bottom: 10px; }}
+        p {{ margin-bottom: 16px; color: #333; }}
+        ul, ol {{ margin: 10px 0 20px 25px; }}
+        li {{ margin-bottom: 8px; color: #333; }}
+        a {{ color: #0f3460; }}
+        a:hover {{ color: #e94560; }}
+        strong {{ color: #1a1a2e; }}
+        .toc {{ background: #f0f4ff; padding: 20px 25px; border-radius: 8px; margin: 20px 0 30px; }}
+        .toc h3 {{ margin-top: 0; margin-bottom: 12px; color: #1a1a2e; font-size: 1.1em; }}
+        .toc a {{ color: #0f3460; text-decoration: none; display: block; padding: 6px 0; border-bottom: 1px solid #e0e7ff; font-size: 0.95em; }}
+        .toc a:last-child {{ border-bottom: none; }}
+        .toc a:hover {{ color: #e94560; padding-left: 4px; }}
+        .comparison-table {{ width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 0.95em; border-radius: 8px; overflow: hidden; }}
+        .comparison-table th {{ background: #0f3460; color: #fff; padding: 12px 10px; text-align: left; font-weight: 600; }}
+        .comparison-table td {{ padding: 10px; border-bottom: 1px solid #ddd; color: #333; }}
+        .comparison-table tr:nth-child(even) {{ background: #f8f9fa; }}
+        .comparison-table tr:hover {{ background: #e8edf5; }}
+        .pro-con {{ display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 20px 0; }}
+        .pro, .con {{ padding: 18px; border-radius: 8px; }}
+        .pro {{ background: #e8f5e9; border-left: 4px solid #2e7d32; }}
+        .con {{ background: #fbe9e7; border-left: 4px solid #c62828; }}
+        .pro ul, .con ul {{ margin: 8px 0 0 20px; }}
+        .pro li, .con li {{ margin-bottom: 6px; }}
+        .verdict {{ background: linear-gradient(135deg, #0f3460, #1a1a2e); color: #fff; padding: 28px; border-radius: 8px; margin: 25px 0; }}
+        .verdict h3 {{ color: #e94560; margin-top: 0; margin-bottom: 15px; font-size: 1.3em; }}
+        .verdict p {{ color: #fff; margin-bottom: 12px; }}
+        .verdict strong {{ color: #fff; }}
+        .faq-item {{ border: 1px solid #ddd; border-radius: 8px; margin: 12px 0; overflow: hidden; }}
+        .faq-q {{ background: #f0f4ff; padding: 14px 16px; font-weight: 600; color: #1a1a2e; cursor: default; }}
+        .faq-a {{ padding: 14px 16px; background: #fff; color: #333; }}
+        .note {{ background: #fff8e1; border-left: 4px solid #ffc107; padding: 14px 18px; border-radius: 4px; margin: 18px 0; color: #333; }}
+        .tip {{ background: #e8f5e9; border-left: 4px solid #28a745; padding: 14px 18px; border-radius: 4px; margin: 18px 0; color: #1a3d2b; }}
+        .warning {{ background: #fbe9e7; border-left: 4px solid #c62828; padding: 14px 18px; border-radius: 4px; margin: 18px 0; color: #4a1a1a; }}
+        .author-box {{ display: flex; align-items: center; gap: 20px; background: #f0f4ff; padding: 24px; border-radius: 10px; margin: 35px 0 10px; border: 1px solid #dde4f0; }}
+        .author-avatar {{ width: 80px; height: 80px; border-radius: 50%; background: linear-gradient(135deg, #0f3460, #e94560); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 1.8em; font-weight: 700; flex-shrink: 0; }}
+        .author-info {{ flex: 1; }}
+        .author-info h4 {{ margin: 0 0 4px; font-size: 1.1em; color: #1a1a2e; }}
+        .author-info p {{ margin: 0; font-size: 0.9em; color: #555; line-height: 1.6; }}
+        @media (max-width: 600px) {{ .container {{ padding: 20px; }} h1 {{ font-size: 1.6em; }} .pro-con {{ grid-template-columns: 1fr; }} .comparison-table {{ font-size: 0.85em; }} .meta {{ flex-direction: column; gap: 5px; }} .author-box {{ flex-direction: column; text-align: center; }} }}
+    </style>
+    {json_ld}
+</head>
+<body>
+<div class="container">
+
+    <h1>{kw_title}: Complete Guide & Best Picks (2026)</h1>
+
+    <div class="meta">
+        <span>{today_str}</span>
+        <span>{author_name}</span>
+        <span>{read_time} min read</span>
+    </div>
+
+    {toc_html}
+
+    {content}
+
+    <div class="author-box">
+        <div class="author-avatar">{author_name[:2].upper()}</div>
+        <div class="author-info">
+            <h4>{author_name}</h4>
+            <p>Technology analyst with 8+ years testing productivity and AI tools. Methodology: hands-on testing with standardized benchmarks, minimum 2-week evaluation period per tool. No affiliate relationships with reviewed products.</p>
+        </div>
+    </div>
+
+</div>
+</body>
+</html>"""
+
+    # ── 10-DIMENSION EDITORIAL QUALITY SYSTEM ────────────
+    # Banned filler — any match triggers a penalty
+    BAN_PHRASES = [
+        # User's explicit ban list
+        "in today's digital landscape", "in today's world", "in this digital age",
+        "it is important to note", "it is worth noting", "it should be noted",
+        "here is what you need to know", "here are some things to consider",
+        "when it comes to", "when it comes down to it",
+        "the bottom line is", "at the end of the day",
+        "this topic is important", "this is a crucial topic",
+        "whether you are a beginner or expert", "whether you are a beginner or an expert",
+        "choosing the right solution", "choosing the right tool",
+        "this comprehensive guide", "comprehensive guide",
+        "let's explore", "lets explore",
+        "in conclusion", "to summarize",
+        "the key takeaway", "key takeaway",
+        # Additional filler patterns
+        "you need to consider", "you should consider",
+        "there are many factors", "there are several factors",
+        "it depends on your needs", "it depends on your specific needs",
+        "the key is to find", "the key is finding",
+        "do your own research", "do thorough research",
+        "last but not least", "first and foremost",
+        "there are a few things", "there are several things",
+        "keep in mind", "bear in mind",
+        "it goes without saying", "needless to say",
+        "all things considered", "when all is said and done",
+        "it depends",  # bare form flag
+        "choosing the right", "choosing a", "choose the right",
+        "this in mind", "that said", "with that in mind",
+        "the world of", "the realm of", "the landscape of",
+        "there is no one size fits all", "no one size fits all",
+        "each has its own", "each comes with its own",
+        "depending on your needs", "based on your needs",
+        "the most important thing", "the first thing you",
+        "a wide range of", "a variety of",
+        "as previously mentioned", "as mentioned earlier",
+        "it is also worth", "it is also important",
+        "one of the most important", "one of the key",
+        "as with any", "like any other",
+        "in the end", "ultimately,",
+        "overall,", "overall ",
+        "so there you have it", "there you have it",
+        "hope this helps", "hopefully this",
+        "thank you for reading", "thanks for reading",
+        "good luck", "happy [a-z]+ing",
+    ]
+
+    # ── Paragraph Audit: check every <p> for information density ──
+    def _audit_paragraphs(article: str) -> dict:
+        """Scan each paragraph, flag those that are thin or filler."""
+        paragraphs = re.findall(r'<p[^>]*>(.*?)</p>', article, re.DOTALL)
+        thin_count = 0
+        ban_paragraphs = []
+        for p in paragraphs:
+            clean = re.sub(r'<[^>]+>', '', p).strip()
+            words = len(clean.split())
+            lower = clean.lower()
+            # Flag if too short (< 12 words) without being a list item or summary
+            if words < 12 and not any(c in clean for c in ['<strong>', '<em>', '<a']):
+                thin_count += 1
+            # Flag if it's a ban phrase match
+            for bp in BAN_PHRASES:
+                if bp in lower:
+                    ban_paragraphs.append(clean[:80])
+                    break
+        return {"total_p": len(paragraphs), "thin": thin_count, "ban_hits": ban_paragraphs}
+
+    # ── Robotic Pattern Detection — flag repeated sentence scaffolding ──
+    ROBOTIC_PATTERNS = [
+        "this means you get", "this is the safer bet", "do not overthink this",
+        "you are not locked into", "if.*is your priority", "here is the reality",
+        "neither is universally better", "one almost certainly fits your workflow",
+        "choose .* if you value", "go with .* if", "either way, you get",
+        "bottom line:", "the cheaper option here is",
+        "sounds great on paper, but", "the gap between these two",
+        "pick your priority honestly",
+    ]
+
+    # ── Micro-Frustration Pools for Evidence Simulation ──
+    _FRUSTRATION_POOL = [
+        "The first time you open it, the interface feels overwhelming. Menu items are everywhere. It takes about a week before muscle memory kicks in.",
+        "Setup is straightforward, but the default configuration leaves a lot to be desired. Expect to spend 20 minutes tweaking settings before it feels right.",
+        "The tutorial is almost useless. Real learning happens through trial and error — or YouTube.",
+        "Installation is smooth. Then you try to do something slightly advanced and hit a wall of confusing documentation.",
+        "It works well enough out of the box, but power users will immediately bump into configuration limits that require workarounds.",
+        "The mobile experience is clearly an afterthought. The desktop version is fine; the mobile app feels like a different (worse) product.",
+        "Updates arrive frequently but inconsistently. Some break workflows; others fix things nobody was complaining about.",
+        "Exporting your data is technically possible but not obvious. Expect to search forums for the right steps.",
+        "The free version is generous, but you will hit its limits faster than expected if your needs are even moderately advanced.",
+        "Customer support response times vary wildly. Weekday mornings get replies in hours; weekend issues sit for days.",
+        "The onboarding tutorial skips the intermediate steps entirely. You go from 'hello world' to advanced configuration with no bridge.",
+        "First impression is solid. Then you notice small inconsistencies — menu placement changes between views, keyboard shortcuts conflict, tooltips disappear too quickly.",
+    ]
+
+    # ── Insight Generator: produce original observations from entity comparisons ──
+    def _generate_entity_insights(v_data: list, kw: str) -> list:
+        """Generate original observations, tradeoffs, and mistakes from verified entities."""
+        insights = []
+        if not v_data or len(v_data) < 2:
+            return insights
+        # Price comparison insight
+        prices = []
+        for v in v_data:
+            price_str = v["pricing"].replace("Free/", "").replace("$", "").replace("/mo", "").replace("/yr", "").replace(" once", "")
+            prices.append((v["name"], price_str))
+        if len(prices) >= 2:
+            cheapest = min(prices, key=lambda x: len(x[1]) if x[1].replace(".","").isdigit() else 99)
+            priciest = max(prices, key=lambda x: len(x[1]) if x[1].replace(".","").isdigit() else 0)
+            insights.append(f"Pricing across top options ranges from {v_data[0]['pricing']} to {v_data[-1]['pricing']}. The cheapest option is rarely the best value — {cheapest[0]} saves money upfront but {v_data[0]['weaknesses'][0].lower() if v_data[0]['name'] == cheapest[0] else v_data[1]['weaknesses'][0]}. The most expensive ({priciest[0]}) is not necessarily the most capable for your specific workflow.")
+
+        # Platform limitation insight
+        platforms_all = set()
+        plat_limited = []
+        for v in v_data:
+            for p in v["platforms"]:
+                platforms_all.add(p)
+            if len(v["platforms"]) <= 2:
+                plat_limited.append(v["name"])
+        if plat_limited:
+            lim_entity = next((d for d in v_data if d['name'] == plat_limited[0]), None)
+            lim_platforms = ', '.join(lim_entity['platforms']) if lim_entity else 'fewer platforms'
+            cross_plat = [v['name'] for v in v_data if len(v['platforms']) > 3][:3]
+            insights.append(f"Platform lock-in matters: {', '.join(plat_limited[:3])} {'are' if len(plat_limited) > 1 else 'is'} limited to {lim_platforms}. If your team uses mixed OS, narrow your search to cross-platform options like {', '.join(cross_plat)}.")
+
+        # Common mistake / tradeoff
+        tradeoff_pairs = []
+        for i, v in enumerate(v_data):
+            for w in v["weaknesses"][:1]:
+                tradeoff_pairs.append((v["name"], w))
+        if tradeoff_pairs:
+            t = tradeoff_pairs[0]
+            insights.append(f"A common mistake is choosing {t[0]} without considering {t[1]}. What works for one use case creates friction in another. Match the tool to your workflow, not the other way around.")
+
+        # Migration cost insight
+        insights.append(f"Switching {kw} tools later costs more than choosing right the first time. Factor in migration effort, team retraining, and workflow disruption — not just the price tag.")
+
+        return insights[:5]
+
+    def _reviewer_weakness_to_outcome(v: dict, idx: int = 0) -> str:
+        """Translate weaknesses into compressed, observational language with micro-frustrations."""
+        w = v.get("weaknesses", [])
+        if not w:
+            return "No significant downsides for most use cases"
+        w0 = w[0].lower()
+
+        # Multi-variant compressed observations
+        variants = {
+            "dated ui": [
+                "The interface looks like it belongs to an earlier era. You stop noticing after a week — but that first impression matters.",
+                "Visually dated. Functional but forgettable. If design polish affects your daily satisfaction, look elsewhere.",
+            ],
+            "less polished": [
+                "Functional, not refined. The rough edges become invisible once you are in the workflow, but they are there on day one.",
+                "It gets the job done without elegance. Some people do not care. If you do, you will notice every day.",
+            ],
+            "subscription only": [
+                "No free tier, no one-time purchase. You pay from day one, every month, forever.",
+                "Recurring cost with no escape hatch. Budget for year two before you commit to year one.",
+            ],
+            "no free tier": [
+                "No way to test-drive the full product. Make sure the trial period is long enough for a real evaluation — three days is not enough.",
+                "You cannot try before you buy. That is a red flag for some buyers, acceptable for others.",
+            ],
+            "expensive": [
+                "Premium pricing that you feel every renewal. Justify the cost against features you will actually use, not marketing promises.",
+                "You pay a premium. The question is whether you actually need what that premium buys.",
+            ],
+            "windows only": [
+                "Windows-only. That is fine if your entire world is Windows. It is a dealbreaker if it is not.",
+                "If your team runs any Mac or Linux machines, this tool is not an option. Full stop.",
+            ],
+            "mac only": [
+                "Mac-only. Excellent if you are all-in on Apple. Excludes everyone else.",
+                "Beautiful on a Mac. Useless everywhere else.",
+            ],
+            "limited customer support": [
+                "When something breaks, do not expect a quick answer. Community forums and documentation are your real support team.",
+                "Support exists but moves slowly. Weekday issues get addressed; weekend problems sit until Monday.",
+            ],
+            "steep learning curve": [
+                "Plan for a frustrating first week. It clicks eventually — but the ramp-up is real.",
+                "Powerful once learned. Painful while learning. Budget the time or pick something simpler.",
+            ],
+            "performance issues": [
+                "Noticeably slower on older hardware. The lag affects daily use, not just initial setup.",
+                "Performance degrades under load. Fine for light use; frustrating for power workflows.",
+            ],
+            "free tier limited": [
+                "The free version is a teaser, not a solution. Budget for the paid plan from the start.",
+                "Free tier exists but deliberately limited. Enough to evaluate, not enough to rely on.",
+            ],
+        }
+        for key, var_list in variants.items():
+            if key in w0:
+                import random as _r
+                return _r.choice(var_list)
+        # Fallback with compressed observation
+        return f"Tradeoff worth noting: {w0}. Whether this matters depends entirely on your workflow."
+
+    def _strength_to_outcome(v: dict, idx: int = 0) -> str:
+        """Translate strength into compressed, implication-based observation."""
+        s = v.get("strengths", [])
+        if not s:
+            return "Solid. Not spectacular, but reliable across the board."
+        s0 = s[0].lower()
+
+        # Observational variants — not over-explained, implies the value
+        variants = {
+            "open source": [
+                "Open source means the code is public, auditable, and not controlled by any single company. That matters more than any feature list.",
+                "Transparent by design. When security relies on trust, open source is the only real guarantee.",
+            ],
+            "audited": [
+                "Third-party audited encryption. Independent reviewers found what internal teams miss.",
+                "Audited by external security firms. That is the gold standard — not because it is perfect, but because someone actually checked.",
+            ],
+            "cross-platform": [
+                "Windows, Mac, Linux, mobile — it runs everywhere. Switch devices later without rebuilding your workflow.",
+                "No ecosystem lock-in. Use it on any device, switch platforms freely. That flexibility is easy to undervalue until you need it.",
+            ],
+            "polished": [
+                "Polished in a way that feels intentional. Every interaction is where you expect it. The mark of a product designed, not just built.",
+                "The UX is refined. You spend less time figuring out where things are and more time actually doing work.",
+            ],
+            "generous free tier": [
+                "The free tier is genuinely usable, not a crippled demo. Most people never need to upgrade.",
+                "Free does not mean limited here. The free tier covers real daily use without constant upgrade nudges.",
+            ],
+            "strong free tier": [
+                "Usable free tier. Not a trial, not a demo — actual functionality at zero cost.",
+                "The free version is good enough that many users never outgrow it. That is rare.",
+            ],
+            "lightweight": [
+                "Runs on older hardware without complaint. No forced upgrades, no system slowdown.",
+                "Lightweight in a way that matters daily. It stays out of your way and does not hog resources.",
+            ],
+            "beginner-friendly": [
+                "Minutes to productivity, not hours. The learning curve is measured in single-digit minutes.",
+                "Immediately intuitive. You do not need a tutorial to do the first thing you want to do.",
+            ],
+        }
+        for key, var_list in variants.items():
+            if key in s0:
+                import random as _r
+                return _r.choice(var_list)
+        return f"Strongest in {s0} — the main reason to pick {v['name']} over alternatives."
+
+    def _generate_reviewer_notes(v: dict) -> str:
+        """Compressed reviewer note — observational, implication-rich, avoids scaffolding."""
+        weaknesses = v.get("weaknesses", [])
+        target = v.get("target_user", "general users")
+
+        outcome_strength = _strength_to_outcome(v)
+        outcome_weakness = _reviewer_weakness_to_outcome(v)
+
+        # Compressed avoid logic — shorter, sharper
+        wl = weaknesses[0].lower().rstrip(".") if weaknesses else ""
+        if "subscription only" in wl:
+            avoid = "Prefers one-time purchases? Skip this."
+        elif "expensive" in wl:
+            avoid = "On a tight budget? Look at free tiers first."
+        elif "windows only" in wl or "mac only" in wl:
+            avoid = "Use more than one OS? This will not work."
+        elif "dated" in wl or "cluttered" in wl:
+            avoid = "Design matters to you? You will notice daily."
+        elif "steep" in wl:
+            avoid = "No patience for setup? Choose something simpler."
+        elif "past security" in wl or "breach" in wl:
+            avoid = "Zero tolerance for past incidents? Move on."
+        elif "no free tier" in wl:
+            avoid = "Need to try before buying? No option here."
+        else:
+            avoid = f"Not ideal if {target.lower()} is not you."
+
+        pricing_lower = v["pricing"].lower()
+        is_free = pricing_lower in ("free",) or pricing_lower.startswith("free/") or "$0" in pricing_lower
+        budget = f" {v['pricing']} may stretch your budget." if not is_free and "free" not in pricing_lower else ""
+
+        import random as _r
+        formats = [
+            f"<p><strong>Reviewer note:</strong> {outcome_strength} {outcome_weakness} {avoid}{budget}</p>",
+            f"<p><strong>Reviewer note:</strong> {outcome_strength} The catch: {outcome_weakness.lower()} {avoid}{budget}</p>",
+            f"<p><strong>Reviewer note:</strong> {outcome_strength} Worth noting: {outcome_weakness.lower()} {avoid}{budget}</p>",
+        ]
+        return _r.choice(formats)
+
+    # ── 10-Dimension Self-Evaluation ──
+    def _self_evaluate(article: str, kw: str, entities: list, headings: list, intent: str = "commercial") -> dict:
+        text = article.lower()
+        kw_l = kw.lower()
+        words = article.split()
+        word_count = len(words)
+        paras = re.findall(r'<p[^>]*>(.*?)</p>', article, re.DOTALL)
+        para_words = [len(re.sub(r'<[^>]+>', '', p).strip().split()) for p in paras]
+        sentences = re.split(r'[.!?]+', article)
+        sentence_lengths = [len(s.split()) for s in sentences if len(s.split()) > 2]
+
+        has_intro = "introduction" in text
+        has_faq = "faq" in text or "frequently asked" in text
+        has_conclusion_text = "conclusion" in text
+        has_schema = "application/ld+json" in text
+        has_table = "<table>" in text
+        heading_count = len([l for l in article.split("\n") if l.strip().startswith("<h")])
+        kw_in_title = kw_l in article[:500].lower()
+        kw_in_h1 = kw_l in article[article.lower().find("<h1>"):article.lower().find("</h1>")].lower() if "<h1>" in article.lower() else False
+        kw_density = text.count(kw_l) / max(1, word_count) * 100 if word_count > 0 else 0
+        any_price = bool(re.search(r'\$\d+', article))
+        ban_hits = sum(1 for bp in BAN_PHRASES if bp in text)
+
+        # Count verified entities in text
+        verified_count = 0
+        for v_cat in _VERIFIED_CATEGORIES.values():
+            for v in v_cat:
+                if v["name"].lower() in text:
+                    verified_count += 1
+
+        # 1. Originality — penalize generic patterns, reward unique structure
+        originality = 10 - min(4, ban_hits)
+        if has_table: originality = min(10, originality + 1)
+        if "<ul>" in text or "<ol>" in text: originality = min(10, originality + 1)
+        if word_count > 1200: originality = min(10, originality + 1)
+        # bonus for having reviewer notes (negatives/limitations)
+        if "reviewer note" in text: originality = min(10, originality + 1)
+
+        # 2. Clarity — structure, heading hierarchy, readability
+        clarity = 5
+        if has_intro: clarity += 1
+        if has_faq: clarity += 1
+        if has_conclusion_text: clarity += 1
+        if heading_count >= 4: clarity += 1
+        if word_count > 1000: clarity += 1
+
+        # 3. Usefulness — real comparisons, actionable content, pricing
+        usefulness = 4
+        if has_table: usefulness += 2
+        if "<ol>" in text: usefulness += 1
+        if any_price: usefulness += 1
+        if word_count > 1200: usefulness += 1
+        if "avoid" in text or "limitation" in text or "downside" in text: usefulness += 1
+
+        # 4. Insight Density — original observations per word count
+        insight_signals = sum(1 for signal in [
+            "common mistake", "tradeoff", "hidden cost", "lock-in",
+            "migration", "learning curve", "workflow friction",
+            "underestimates", "overlooks", "surprising",
+        ] if signal in text)
+        insight_density = min(10, 4 + insight_signals)
+        if word_count > 1500 and insight_signals >= 2: insight_density = min(10, insight_density + 1)
+        if "reviewer note" in text: insight_density = min(10, insight_density + 1)
+
+        # 5. Entity Quality — verified brands, products, tools in text
+        entity_q = 4
+        entity_q = min(10, 4 + verified_count)
+        if any(e["name"].lower() in text for e in entities if e.get("frequency", 0) > 1):
+            entity_q = min(10, entity_q + 1)
+
+        # 6. SEO Depth — schema, keyword placement, semantic coverage
+        seo_depth = 4
+        if has_schema: seo_depth += 2
+        if kw_in_h1: seo_depth += 1
+        if kw_in_title: seo_depth += 1
+        if 0.5 <= kw_density <= 3: seo_depth += 1
+        if has_table: seo_depth += 1
+
+        # 7. Anti-Generic Quality — ban phrase avoidance, specificity
+        anti_generic = 10 - min(4, ban_hits)
+        if any_price: anti_generic = min(10, anti_generic + 1)
+        if has_table: anti_generic = min(10, anti_generic + 1)
+        if verified_count >= 3: anti_generic = min(10, anti_generic + 1)
+        if word_count < 500: anti_generic = max(1, anti_generic - 2)
+
+        # 8. Readability — sentence length variety, paragraph structure
+        readability = 6
+        if has_intro and has_conclusion_text: readability += 1
+        if heading_count >= 5: readability += 1
+        if word_count > 800: readability += 1
+        if sentence_lengths:
+            avg_s = sum(sentence_lengths) / len(sentence_lengths)
+            if 12 <= avg_s <= 22: readability += 1  # ideal average sentence length
+
+        # 9. Search Intent Match — does it match commercial/informational signals
+        intent_match = 7
+        if has_table: intent_match = min(10, intent_match + 1)
+        if "<ul>" in text: intent_match = min(10, intent_match + 1)
+        if any_price: intent_match = min(10, intent_match + 1)
+        if "vs" in text or "versus" in text or "alternative" in text: intent_match = min(10, intent_match + 1)
+
+        # 10. Topical Authority — depth, entity coverage, adjacent topics
+        topical = 5
+        if verified_count >= 3: topical += 1
+        if verified_count >= 5: topical += 1
+        if word_count > 1500: topical += 1
+        if has_faq and heading_count >= 6: topical += 1
+        if has_schema: topical += 1
+
+        # 11. Decision Clarity — does the reader know what to choose?
+        decision_clarity = 5
+        if any(phrase in text for phrase in ["our top pick", "best overall", "recommendation"]):
+            decision_clarity += 2
+        if "avoid if" in text or "not for" in text:
+            decision_clarity += 1
+        if "confidence" in text and "/10" in text:
+            decision_clarity += 1
+        if any(bp in text for bp in ["if you value", "choose", "go with"]):
+            decision_clarity += 1
+
+        # 12. Recommendation Quality — depth, tradeoffs, alternatives
+        rec_quality = 5
+        if "recommendation matrix" in text:
+            rec_quality += 2
+        if "Tradeoff" in text or "tradeoff" in text:
+            rec_quality += 1
+        if "migration" in text or "lock-in" in text:
+            rec_quality += 1
+        if "hidden cost" in text:
+            rec_quality += 1
+
+        # 13. Emotional Realism — addresses fears, doubts, hesitations
+        emotional_realism = 5
+        fear_signals = ["worried about", "afraid of", "not sure you need", "migration fear",
+                        "subscription fatigue", "hidden cost", "will i lose", "how hard is it"]
+        for sig in fear_signals:
+            if sig in text:
+                emotional_realism += 1
+        if "common concerns" in text:
+            emotional_realism = min(10, emotional_realism + 1)
+
+        # 14. Trust Engineering — admits negatives, discloses risks
+        trust_engineering = 5
+        if "weakness" in text or "downside" in text or "tradeoff" in text:
+            trust_engineering += 1
+        if "limitation" in text or "not ideal" in text or "avoid if" in text:
+            trust_engineering += 1
+        if "reviewer note" in text:
+            trust_engineering += 1
+        if "risk" in text and "best for" in text:
+            trust_engineering += 1
+        if "hidden" in text or "catch" in text:
+            trust_engineering = min(10, trust_engineering + 1)
+
+        # 15. Attention Retention — pattern interrupts, mini revelations, momentum
+        attention_retention = 5
+        if "most people miss" in text or "surprising" in text:
+            attention_retention += 2
+        if "reality check" in text or "here is the truth" in text:
+            attention_retention += 1
+        if "verdict" in text or "bottom line" in text:
+            attention_retention += 1
+        if "'" in article and any(p in text for p in ["do not", "cannot", "will not", "is not"]):
+            attention_retention = min(10, attention_retention + 1)
+
+        # 16. Human Realism — detects lived-experience signals, micro-frustrations
+        human_realism = 5
+        if "first time" in text or "first week" in text or "day one" in text:
+            human_realism += 1
+        if any(p in text for p in ["frustrating", "overwhelming", "annoying", "clunky", "hit a wall"]):
+            human_realism += 1
+        if any(p in text for p in ["after two weeks", "after a week", "muscle memory", "expect to spend"]):
+            human_realism += 1
+        if "reviewer note" in text:
+            human_realism += 1
+        if "'" in article and any(p in text for p in ["does not", "will not", "is not", "cannot"]):
+            human_realism = min(10, human_realism + 1)
+
+        # 17. Narrative Continuity — cross-section references, callbacks
+        narrative_continuity = 6
+        if any(p in text for p in ["connects back", "remember", "context from earlier", "we noted", "we raised", "issue we raised", "we flagged"]):
+            narrative_continuity += 2
+        if any(p in text for p in ["this matters because", "earlier we saw", "as we noted", "earlier point"]):
+            narrative_continuity += 1
+        if "memory" in text and "narrative" not in text:
+            narrative_continuity = min(10, narrative_continuity + 1)
+
+        # 18. Editorial Compression — avoids over-explanation, uses implication
+        editorial_compression = 6
+        # Reward compressed signals
+        if any(p in text for p in ["in brief", "worth noting", "the catch", "our take", "where it fits", "tradeoff worth"]):
+            editorial_compression += 2
+        # Penalize scaffolded over-explanation
+        for sp in ["this means you get", "you are not locked into", "this is the safer bet"]:
+            if sp in text:
+                editorial_compression -= 1
+        # Reward short punchy paragraphs
+        if para_words and (sum(1 for pw in para_words if pw < 15) / len(para_words)) > 0.15:
+            editorial_compression = min(10, editorial_compression + 1)
+        # Short sentences starting a paragraph (looser regex)
+        short_starts = len(re.findall(r'<p[^>]*>[^<]{10,60}[.!?]</p>', article))
+        if short_starts >= 3:
+            editorial_compression = min(10, editorial_compression + 1)
+        # Reward for non-generic closing sentences
+        if any(p in text for p in ["the equation shifts", "the priority instead", "your search ends"]):
+            editorial_compression = min(10, editorial_compression + 1)
+
+        # 19. Authenticity Illusion — small truths, nuanced annoyances
+        authenticity = 6
+        if any(p in text for p in ["technically possible", "inconsistently", "customer support", "default configuration"]):
+            authenticity += 1
+        if any(p in text for p in ["muscle memory", "after a week", "first impression", "first time"]):
+            authenticity += 1
+        if any(p in text for p in ["frustrating", "overwhelming", "clunky", "hit a wall"]):
+            authenticity += 1
+        # Reward for varied UX observations
+        if any(p in text for p in ["menu items", "settings before", "configuration limits", "workarounds"]):
+            authenticity = min(10, authenticity + 1)
+
+        # 20. Decision Simplicity — forced elimination, sharp recommendations
+        decision_simplicity = 5
+        if any(p in text for p in ["skip this unless", "ignore this", "skip", "dealbreaker", "non-starter"]):
+            decision_simplicity += 2
+        if any(p in text for p in ["most people should", "your search ends", "where your search ends"]):
+            decision_simplicity += 1
+        if "most people" in text:
+            decision_simplicity = min(10, decision_simplicity + 1)
+
+        dims = {
+            "originality": originality,
+            "clarity": clarity,
+            "usefulness": usefulness,
+            "insight_density": insight_density,
+            "entity_quality": entity_q,
+            "seo_depth": seo_depth,
+            "anti_generic": anti_generic,
+            "readability": readability,
+            "intent_match": intent_match,
+            "topical_authority": topical,
+            "decision_clarity": decision_clarity,
+            "recommendation_quality": rec_quality,
+            "emotional_realism": emotional_realism,
+            "trust_engineering": trust_engineering,
+            "attention_retention": attention_retention,
+            "human_realism": human_realism,
+            "narrative_continuity": narrative_continuity,
+            "editorial_compression": editorial_compression,
+            "authenticity_illusion": authenticity,
+            "decision_simplicity": decision_simplicity,
+        }
+
+        # ── Intent-Specific Scoring ──
+        intent_bonus = {}
+        if intent == "news":
+            intent_bonus["timeliness"] = 8 if any(w in text for w in ["today", "this week", "just happened", "latest", "breaking"]) else 6
+            intent_bonus["narrative_clarity"] = min(10, 6 + (1 if "what happened" in text else 0) + (1 if "why it matters" in text else 0) + (1 if "bottom line" in text else 0))
+            intent_bonus["context_depth"] = min(10, 6 + (1 if "historical" in text else 0) + (1 if "structural" in text else 0) + (1 if "context" in text else 0))
+            intent_bonus["bias_balance"] = min(10, 6 + (1 if "bullish" in text or "bearish" in text else 0) + (1 if "both sides" in text or "disagree" in text else 0))
+            intent_bonus["signal_extraction"] = min(10, 5 + (1 if "signal" in text else 0) + (1 if "noise" in text else 0) + (1 if "what matters" in text else 0) + (1 if "most coverage" in text else 0))
+            intent_bonus["source_diversity"] = min(10, 5 + (1 if "analyst" in text else 0) + (1 if "institutional" in text else 0) + (1 if "market" in text else 0))
+            intent_bonus["expert_voice"] = min(10, 5 + (1 if "analyst" in text else 0) + (1 if "expert" in text else 0) + (1 if "interpretation" in text else 0))
+            intent_bonus["originality"] = dims.get("originality", 7)
+
+        elif intent == "informational":
+            intent_bonus["explanation_quality"] = min(10, 6 + (1 if "what it is" in text else 0) + (1 if "core" in text else 0) + (1 if "fundamental" in text else 0))
+            intent_bonus["example_quality"] = min(10, 5 + (1 if "example" in text else 0) + (1 if "scenario" in text else 0) + (1 if "practical" in text else 0))
+            intent_bonus["misconception_coverage"] = min(10, 5 + (1 if "misconception" in text else 0) + (1 if "common mistake" in text else 0) + (1 if "myth" in text else 0))
+            intent_bonus["clarity"] = dims.get("clarity", 7)
+            intent_bonus["usefulness"] = dims.get("usefulness", 7)
+            intent_bonus["topical_authority"] = dims.get("topical_authority", 7)
+            intent_bonus["seo_depth"] = dims.get("seo_depth", 7)
+            intent_bonus["originality"] = dims.get("originality", 7)
+
+        elif intent == "educational":
+            intent_bonus["comprehension_flow"] = min(10, 6 + (1 if "step" in text else 0) + (1 if "build" in text else 0) + (1 if "layer" in text else 0))
+            intent_bonus["teaching_progression"] = min(10, 6 + (1 if "prerequisite" in text else 0) + (1 if "before" in text else 0) + (1 if "next" in text else 0))
+            intent_bonus["cognitive_load"] = min(10, 6 + (1 if "beginner" in text else 0) + (1 if "take your time" in text else 0) - (1 if "meanwhile" in text else 0))
+            intent_bonus["practice_utility"] = min(10, 5 + (1 if "exercise" in text else 0) + (1 if "practice" in text else 0) + (1 if "try" in text else 0))
+            intent_bonus["clarity"] = dims.get("clarity", 7)
+            intent_bonus["usefulness"] = dims.get("usefulness", 7)
+            intent_bonus["originality"] = dims.get("originality", 7)
+
+        elif intent == "comparative":
+            intent_bonus["tradeoff_depth"] = min(10, 6 + (1 if "tradeoff" in text else 0) + (1 if "compromise" in text else 0) + (1 if "versus" in text else 0))
+            intent_bonus["decision_friction"] = min(10, 5 + (1 if "friction" in text else 0) + (1 if "harder" in text else 0) + (1 if "uncertainty" in text else 0) + (1 if "tension" in text else 0))
+            intent_bonus["contextual_winner"] = min(10, 5 + (1 if "depends" in text else 0) + (1 if "if you" in text else 0) + (1 if "use case" in text else 0))
+            intent_bonus["entity_quality"] = dims.get("entity_quality", 7)
+            intent_bonus["comparison_depth"] = dims.get("insight_density", 7)
+            intent_bonus["trust_engineering"] = dims.get("trust_engineering", 7)
+            intent_bonus["decision_clarity"] = dims.get("decision_clarity", 7)
+            intent_bonus["originality"] = dims.get("originality", 7)
+
+        elif intent == "trend_analysis":
+            intent_bonus["directional_insight"] = min(10, 6 + (1 if "signal" in text else 0) + (1 if "direction" in text else 0) + (1 if "movement" in text else 0))
+            intent_bonus["uncertainty_honesty"] = min(10, 5 + (1 if "uncertainty" in text else 0) + (1 if "dont know" in text else 0) + (1 if "range" in text else 0) + (1 if "scenario" in text else 0))
+            intent_bonus["scenario_quality"] = min(10, 5 + (1 if "scenario" in text else 0) + (1 if "probability" in text else 0) + (1 if "conditions" in text else 0))
+            intent_bonus["timing_awareness"] = min(10, 5 + (1 if "timing" in text else 0) + (1 if "too early" in text else 0) + (1 if "position" in text else 0))
+            intent_bonus["second_order_depth"] = min(10, 5 + (1 if "second-order" in text or "second order" in text else 0) + (1 if "adjacent" in text else 0) + (1 if "implication" in text else 0))
+            intent_bonus["market_context"] = min(10, 6 + (1 if "market" in text else 0) + (1 if "capital" in text else 0) + (1 if "flow" in text else 0))
+            intent_bonus["originality"] = dims.get("originality", 7)
+
+        # Merge intent-specific dimensions into dims
+        dims.update(intent_bonus)
+
+        min_score = min(dims.values())
+        passing = all(v >= 8 for v in dims.values())
+        total = sum(dims.values())
+        max_total = len(dims) * 10
+        return {**dims, "min_score": min_score, "passing": passing, "total": total, "max": max_total}
+
+    # ── Rewrite Instruction Generator ──
+    def _generate_rewrite_notes(score: dict, article: str, kw: str, intent: str = "commercial") -> str:
+        """Generate specific rewrite instructions for weak dimensions."""
+        notes = []
+        dim_descriptions = {
+            "originality": "Add unique angles, avoid ban phrases, include reviewer-style opinions",
+            "clarity": "Improve heading hierarchy, add intro/FAQ/conclusion sections",
+            "usefulness": "Add comparison tables, pricing data, actionable advice, limitations",
+            "insight_density": "Add original observations, common mistakes, tradeoffs, migration considerations",
+            "entity_quality": "Include more verified brands/products with real data",
+            "seo_depth": "Add schema markup, improve keyword placement in H1 and title",
+            "anti_generic": "Remove ban phrases, add specific data points and verified entities",
+            "readability": "Vary sentence length, improve paragraph structure",
+            "intent_match": "Add comparison language, pricing, lists for commercial intent",
+            "topical_authority": "Expand coverage, add more entities, FAQ, adjacent topics",
+            "human_realism": "Add micro-frustrations, onboarding pain, lived-experience observations",
+            "narrative_continuity": "Add cross-section references, callbacks to earlier points",
+            "editorial_compression": "Remove over-explanation, use implication, shorten scaffolded sentences",
+            "authenticity_illusion": "Add small truths, nuanced annoyances, realistic contradictions",
+            "decision_simplicity": "Add forced elimination logic, sharper exclusions, skip-this-unless",
+            # Intent-specific dimensions
+            "timeliness": "Add more time-sensitive framing, recent data points, fresh sources",
+            "narrative_clarity": "Improve the narrative arc — clear what happened, why it matters, what comes next",
+            "context_depth": "Add historical parallels, structural context, background forces",
+            "bias_balance": "Present both bull and bear cases fairly before picking a side",
+            "signal_extraction": "Separate signal from noise more clearly — what actually matters vs what is noise",
+            "source_diversity": "Cite more diverse sources — institutional, retail, on-chain, regulatory",
+            "expert_voice": "Strengthen the analyst/journalist voice — fewer generic statements, more authoritative framing",
+            "explanation_quality": "Improve core explanation — start with the simplest accurate definition",
+            "example_quality": "Add more concrete, relatable examples — scenarios the reader can connect to",
+            "misconception_coverage": "Address common misconceptions head-on — clear up what people get wrong",
+            "comprehension_flow": "Improve the learning progression — each section should build on the last",
+            "teaching_progression": "Add prerequisites, checkpoints, and clear next steps",
+            "cognitive_load": "Reduce complexity per section — break down into smaller chunks",
+            "practice_utility": "Add actionable exercises, practice tasks, or self-assessment questions",
+            "tradeoff_depth": "Go deeper on tradeoffs — not just what each option does but what it costs to choose it",
+            "decision_friction": "Surface the real points of friction — switching costs, lock-in, hidden tradeoffs",
+            "contextual_winner": "Make the winner conditional on specific use cases — not a universal recommendation",
+            "directional_insight": "Sharpen the directional analysis — where is this headed and why",
+            "uncertainty_honesty": "Be more candid about what we don't know — uncertainty is valuable information",
+            "scenario_quality": "Improve scenario modeling — specific conditions, probabilities, triggers",
+            "timing_awareness": "Add timing analysis — not just direction but when to act",
+            "second_order_depth": "Add second-order effects — how adjacent sectors and markets will respond",
+            "market_context": "Strengthen market context — capital flows, infrastructure, institutional positioning",
+        }
+        # Intent-specific rewrite thresholds
+        intent_dim_thresholds = {
+            "news": ["timeliness", "narrative_clarity", "context_depth", "bias_balance", "signal_extraction", "source_diversity", "expert_voice", "originality"],
+            "informational": ["explanation_quality", "example_quality", "misconception_coverage", "clarity", "usefulness", "topical_authority", "originality"],
+            "educational": ["comprehension_flow", "teaching_progression", "cognitive_load", "practice_utility", "clarity", "usefulness", "originality"],
+            "comparative": ["tradeoff_depth", "decision_friction", "contextual_winner", "entity_quality", "trust_engineering", "decision_clarity", "originality"],
+            "trend_analysis": ["directional_insight", "uncertainty_honesty", "scenario_quality", "timing_awareness", "second_order_depth", "market_context", "originality"],
+            "commercial": ["originality", "clarity", "usefulness", "insight_density", "entity_quality", "seo_depth", "anti_generic", "readability", "intent_match", "topical_authority", "human_realism", "narrative_continuity", "editorial_compression", "authenticity_illusion", "decision_simplicity"],
+        }
+        check_dims = intent_dim_thresholds.get(intent, intent_dim_thresholds["commercial"])
+
+        # Override generic descriptions with intent-aware suggestions
+        if intent in ("educational", "informational"):
+            dim_descriptions["usefulness"] = "Add concrete examples, practical applications, and actionable takeaways"
+            dim_descriptions["entity_quality"] = "Include more relevant concepts, terminology, and referenced standards"
+            dim_descriptions["intent_match"] = "Ensure educational tone — step-by-step progression, clear explanations, no commercial language"
+        elif intent == "news":
+            dim_descriptions["usefulness"] = "Add timely context, analyst perspectives, and what-it-means-for-you framing"
+            dim_descriptions["entity_quality"] = "Include more publication names, institutional sources, and expert quotes"
+            dim_descriptions["intent_match"] = "Ensure news voice — timeliness, narrative framing, no commercial recommendations"
+        elif intent == "trend_analysis":
+            dim_descriptions["usefulness"] = "Add directional signals, scenario probabilities, and timing considerations"
+            dim_descriptions["entity_quality"] = "Include more market indicators, institutional data points, and trend references"
+            dim_descriptions["intent_match"] = "Ensure analysis tone — directional insight, uncertainty acknowledgment, scenario modeling"
+
+        for dim in check_dims:
+            min_v = 8
+            if score.get(dim, 10) < min_v:
+                notes.append(f"- {dim.replace('_', ' ').title()} ({score[dim]}/10): {dim_descriptions.get(dim, 'Improve this dimension')}")
+        if not notes:
+            return ""
+        return "<!-- REWRITE NEEDED\n\nWeak dimensions:\n" + "\n".join(notes) + "\n-->"
+
+    # ── Dynamic JSON handlers ──────────────────────────────
+    if is_json:
+        search_results, competitor_pages = _serp_search(kw)
+
+        all_entities = []
+        all_headings = []
+        for page in competitor_pages:
+            all_entities.extend(_extract_entities(page.get("text", "")))
+            all_headings.extend(_extract_headings(page.get("html", "")))
+
+        snippet_entities = _extract_snippet_entities(search_results)
+        if not all_entities and snippet_entities:
+            all_entities = snippet_entities
+        else:
+            for se in snippet_entities:
+                if not any(e["name"] == se["name"] for e in all_entities):
+                    all_entities.append(se)
+
+        # Inject verified entities when SERP entities are low quality
+        kw_naked_v = re.sub(r'^(best|top|free)\s+', '', kw.lower(), flags=re.IGNORECASE).strip()
+        verified_fallback = _get_verified_entities(kw_naked_v)
+        if verified_fallback and (len(all_entities) < 3 or not all_entities):
+            for v in verified_fallback:
+                if not any(e["name"].lower() == v["name"].lower() for e in all_entities):
+                    all_entities.append({"name": v["name"], "type": "verified_entity", "frequency": 5})
+
+        seen_names = set()
+        deduped_entities = []
+        for e in all_entities:
+            if e["name"] not in seen_names:
+                seen_names.add(e["name"])
+                deduped_entities.append(e)
+
+        if not all_headings and search_results:
+            for title, _, _ in search_results:
+                cleaned = re.sub(r'[\[\(].*?[\]\)]', '', title).strip().rstrip(':.,;!?')
+                if len(cleaned) > 10:
+                    all_headings.append({"level": "H2", "text": cleaned})
+
+        serp_titles_j = [r[0] for r in search_results] if search_results else []
+        serp_snippets_j = [r[1] for r in search_results] if search_results else []
+        intent = _detect_search_intent(kw, serp_titles_j, serp_snippets_j)
+
+        top_result_titles = [r[0][:80] for r in search_results[:3]]
+
+        if is_cluster:
+            long_tail = []
+            for r in search_results:
+                for word in r[0].split():
+                    w = word.lower().strip(",:;.!?")
+                    if w not in kw.lower() and len(w) > 3:
+                        long_tail.append(f"{kw.lower()} {w}")
+                        if len(long_tail) >= 5:
+                            break
+                if len(long_tail) >= 5:
+                    break
+            cluster_items = [
+                {"keyword": f"{kw} for beginners", "type": "informational", "priority": "high", "estimated_volume": "medium", "title": f"{kw} for Beginners: Getting Started"},
+                {"keyword": f"best {kw} options", "type": "commercial", "priority": "high", "estimated_volume": "high", "title": f"Best {kw} Options in 2026"},
+                {"keyword": f"{kw} guide", "type": "informational", "priority": "high", "estimated_volume": "high", "title": f"The Complete {kw} Guide"},
+                {"keyword": f"{kw} tips and tricks", "type": "informational", "priority": "medium", "estimated_volume": "medium", "title": f"Advanced {kw} Tips"},
+                {"keyword": f"{kw} vs alternatives", "type": "commercial", "priority": "medium", "estimated_volume": "medium", "title": f"{kw} vs The Competition"},
+            ]
+            if deduped_entities:
+                top_entity = deduped_entities[0]["name"]
+                cluster_items.append({"keyword": f"{kw} and {top_entity}", "type": "commercial", "priority": "medium", "estimated_volume": "low", "title": f"{kw} with {top_entity}"})
+            result = json.dumps({
+                "pillar": {"keyword": kw, "intent": intent, "word_count": 2500, "title": f"{kw}: The Complete Guide"},
+                "clusters": cluster_items[:6],
+                "long_tail": long_tail[:5] + [f"how to {kw.lower()}", f"why {kw.lower()} matters"],
+                "internal_link_map": {"pillar_to_clusters": [c["keyword"] for c in cluster_items[:3]], "cluster_to_cluster": []},
+                "quick_wins": [f"{kw} basics", f"simple {kw} strategies"],
+                "authority_path": "Start with pillar, then weekly cluster articles"
+            }, ensure_ascii=False)
+            if stream: print(result)
+            return result
+
+        if is_calendar:
+            cal_items = [
+                {"month": 1, "week": 1, "title": f"{kw}: The Complete Guide", "keyword": kw, "type": "pillar", "word_count": 2500, "intent": intent, "priority": "P1", "links_to": []},
+                {"month": 1, "week": 2, "title": f"Getting Started with {kw}", "keyword": f"{kw} basics", "type": "cluster", "word_count": 1500, "intent": "informational", "priority": "P1", "links_to": [kw]},
+                {"month": 1, "week": 3, "title": f"Top {kw} Solutions", "keyword": f"best {kw}", "type": "cluster", "word_count": 1800, "intent": "commercial", "priority": "P1", "links_to": [kw]},
+                {"month": 1, "week": 4, "title": f"{kw} FAQ and Common Questions", "keyword": f"{kw} questions", "type": "long-tail", "word_count": 1200, "intent": "informational", "priority": "P2", "links_to": []},
+            ]
+            if deduped_entities:
+                e = deduped_entities[0]["name"]
+                cal_items.append({"month": 2, "week": 1, "title": f"{kw} vs {e}", "keyword": f"{kw} vs {e}", "type": "cluster", "word_count": 2000, "intent": "commercial", "priority": "P1", "links_to": [kw]})
+            result = json.dumps(cal_items, ensure_ascii=False)
+            if stream: print(result)
+            return result
+
+        if is_ctr:
+            titles = [f"{kw}: Complete Guide", f"10 {kw} Insights", f"The Ultimate {kw} Resource"]
+            if deduped_entities:
+                e = deduped_entities[0]["name"]
+                titles.append(f"{kw} vs {e}: Which Is Better?")
+            descs = [f"Everything you need to know about {kw}. Expert insights, comparisons, and practical advice for 2026."]
+            if top_result_titles:
+                descs.append(f"Looking for the best {kw} information? We cover what top guides miss.")
+            result = json.dumps({
+                "titles": titles[:4],
+                "descriptions": descs + [f"Discover {kw} strategies that actually work. Actionable tips and expert recommendations."],
+                "recommended_title": titles[0],
+                "recommended_description": descs[0]
+            }, ensure_ascii=False)
+            if stream: print(result)
+            return result
+
+        if is_authority:
+            has_beginner = any("beginner" in h["text"].lower() for h in all_headings)
+            has_advanced = any("advanced" in h["text"].lower() for h in all_headings)
+            strong = ["general information"]
+            weak = ["case studies", "expert interviews"]
+            if has_beginner:
+                strong.append("beginner content")
+            else:
+                weak.append("beginner-friendly content")
+            if has_advanced:
+                weak.append("advanced techniques")
+            next_articles = [f"Advanced {kw} strategies", f"{kw} case studies"]
+            if deduped_entities:
+                next_articles.append(f"Deep dive into {deduped_entities[0]['name']}")
+            result = json.dumps({
+                "authority_score": 45, "coverage_pct": "35%",
+                "strong_areas": strong[:4], "weak_areas": weak[:4],
+                "next_3_articles": next_articles[:3],
+                "estimated_weeks_to_authority": 12
+            }, ensure_ascii=False)
+            if stream: print(result)
+            return result
+
+        if is_strategy:
+            gap_ideas = [f"In-depth analysis of {kw} use cases", "Real-world examples and case studies"]
+            if deduped_entities:
+                gap_ideas.append(f"Comparison of {deduped_entities[0]['name']} with alternatives")
+            sections = ["Understanding the Basics"]
+            for h in all_headings[:4]:
+                sections.append(h["text"][:50])
+            sections = list(dict.fromkeys(sections))[:6]
+            result = json.dumps({
+                "ideal_length": max(1500, min(3500, len(all_headings) * 300)),
+                "required_sections": sections,
+                "must_have_elements": ["Expert tips", "Statistics", "Examples", "FAQ"],
+                "unique_angle": f"Practical, actionable {kw} strategies backed by real research",
+                "strategy": "aggressive" if len(search_results) > 3 else "strategic",
+                "reasoning": f"Based on analysis of {len(search_results)} competing articles covering {len(set(h['text'] for h in all_headings))} unique topics"
+            }, ensure_ascii=False)
+            if stream: print(result)
+            return result
+
+        if is_competitor:
+            common_s = list(dict.fromkeys([h["text"][:60] for h in all_headings if h["level"] == "H2"]))[:5]
+            if not common_s:
+                common_s = ["Introduction", "Key Features", "Benefits", "Comparison", "FAQ"]
+            result = json.dumps({
+                "common_sections": common_s,
+                "missing_gaps": ["Real-world case studies", "Budget-friendly options", "Step-by-step tutorials"],
+                "content_length_avg": f"{1800 + len(all_headings) * 100}-{2200 + len(all_headings) * 100}",
+                "seo_patterns": ["Structured guides", "Bullet-point lists", "Expert quotes"],
+                "weaknesses": ["Generic content without specific data", "Missing practical examples"],
+                "why_they_rank": "Topical relevance and backlink authority"
+            }, ensure_ascii=False)
+            if stream: print(result)
+            return result
+
+        result = json.dumps({"result": f"Analysis for {kw} completed successfully."}, ensure_ascii=False)
+        if stream: print(result)
+        return result
+
+    # ── Dynamic Article Writer ────────────────────────────
+    print(f"  [TRACE] Before is_article block. is_article={is_article}")
+    if is_article:
+        print(c("dim", f"  · Searching web for: {kw}"))
+        search_results, competitor_pages = _serp_search(kw)
+
+        kw_lower = kw.lower()
+        kw_title = kw[0].upper() + kw[1:] if kw else kw
+        kw_slug = re.sub(r"[^a-z0-9-]+", "-", kw_lower).strip("-")[:60]
+
+        # Phase 1: SERP Intelligence
+        all_headings = []
+        all_entities = []
+        for page in competitor_pages:
+            headings = _extract_headings(page.get("html", ""))
+            all_headings.extend(headings)
+            entities = _extract_entities(page.get("text", ""))
+            all_entities.extend(entities)
+
+        snippet_entities = _extract_snippet_entities(search_results)
+        if not all_entities and snippet_entities:
+            all_entities = snippet_entities
+        else:
+            for se in snippet_entities:
+                if not any(e["name"] == se["name"] for e in all_entities):
+                    all_entities.append(se)
+
+        # Inject verified entities when SERP entities are low quality or missing
+        kw_naked_v = re.sub(r'^(best|top|free)\s+', '', kw_lower, flags=re.IGNORECASE).strip()
+        verified_fallback = _get_verified_entities(kw_naked_v)
+        if verified_fallback and (len(all_entities) < 3 or not all_entities):
+            for v in verified_fallback:
+                if not any(e["name"].lower() == v["name"].lower() for e in all_entities):
+                    all_entities.append({"name": v["name"], "type": "verified_entity", "frequency": 5})
+
+        seen_names = set()
+        deduped_entities = []
+        for e in all_entities:
+            if e["name"] not in seen_names:
+                seen_names.add(e["name"])
+                deduped_entities.append(e)
+
+        if not all_headings and search_results:
+            for title, _, _ in search_results:
+                cleaned = re.sub(r'[\[\(].*?[\]\)]', '', title).strip().rstrip(':.,;!?')
+                if len(cleaned) > 10:
+                    all_headings.append({"level": "H2", "text": cleaned})
+
+        # ── Intent-Aware Classifier ──
+        serp_titles = [r[0] for r in search_results] if search_results else []
+        serp_snippets = [r[1] for r in search_results] if search_results else []
+        intent = _detect_search_intent(kw, serp_titles, serp_snippets)
+        sections = _build_dynamic_sections(kw, intent, all_headings, deduped_entities, search_results)
+        arch = _INTENT_ARCHITECTURES.get(intent, _INTENT_ARCHITECTURES["commercial"])
+
+        if search_results:
+            print(c("green", f"  ✓ Found {len(search_results)} results · {len(deduped_entities)} entities · {intent} intent"))
+
+        # Phase 2: Dynamic Outline — meta description, title, schema
+        meta_descs = {
+            "commercial": f"Looking for the best {re.sub(r'^(best|top|free)\\s+', '', kw_lower, flags=re.IGNORECASE).strip()}? We compare top options, pricing, features, and help you choose the right fit.",
+            "transactional": f"Compare prices, features, and value for {kw_lower}. Find the best deal with actual pricing data and honest tradeoffs.",
+            "comparative": f"{kw_title}: detailed comparison of top options. We analyze tradeoffs, pricing, and real-world performance so you can decide.",
+            "news": f"{kw_title}: in-depth analysis of the latest developments. What happened, why it matters, and what analysts disagree on.",
+            "informational": f"{kw_title} explained clearly. What it is, common misconceptions, practical examples, and how it actually works.",
+            "educational": f"Complete guide to {kw_lower}. Step-by-step progression from basics to advanced concepts with practical examples.",
+            "trend_analysis": f"{kw_title}: market movements, directional signals, and scenario modeling. Strategic foresight for what comes next.",
+            "investigative": f"{kw_title}: deep investigation into the claims, evidence, and competing narratives. What we found and what it means.",
+            "opinion": f"{kw_title}: an editorial perspective on what is really happening and why it matters more than most realize.",
+        }
+        meta_desc = meta_descs.get(intent, f"Complete guide to {kw}. Expert analysis and actionable insights for 2026.")
+
+        title_templates = {
+            "commercial": f"{kw_title}: The Complete Buyer's Guide (2026)",
+            "transactional": f"{kw_title}: Pricing, Options, and Best Deals (2026)",
+            "comparative": f"{kw_title}: Full Comparison (2026)",
+            "news": f"{kw_title}: In-Depth Analysis (2026)",
+            "informational": f"{kw_title}: What You Need to Know (2026)",
+            "educational": f"{kw_title}: The Complete Guide (2026)",
+            "trend_analysis": f"{kw_title}: Trends, Signals, and What Comes Next (2026)",
+            "investigative": f"{kw_title}: Investigation and Analysis (2026)",
+            "opinion": f"{kw_title}: An Editorial Perspective (2026)",
+        }
+        page_title = title_templates.get(intent, f"{kw_title}: Complete Guide (2026)")
+
+        h1_title = page_title.replace("(2026)", "").strip().rstrip(",")
+
+        h = []
+
+        # HEAD
+        today_str = _dt_router.now().strftime("%Y-%m-%d")
+        today_display = _dt_router.now().strftime("%B %Y")
+        site_url = SETTINGS.get("site_url", "https://yoursite.com").rstrip("/")
+        author = SETTINGS.get("author_name", "SEO Agent Pro")
+
+        h.append(f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{page_title}</title>
+    <meta name="description" content="{meta_desc}">
+    <link rel="canonical" href="{site_url}/{kw_slug}">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="intent" content="{intent}">
+</head>
+<body itemscope itemtype="https://schema.org/Article">
+<meta itemprop="headline" content="{h1_title}">
+<meta itemprop="description" content="{meta_desc}">
+<meta itemprop="datePublished" content="{today_str}">
+<meta itemprop="dateModified" content="{today_str}">
+<meta itemprop="author" itemscope itemtype="https://schema.org/Person">
+    <meta itemprop="name" content="{author}">
+</meta>
+
+<h1>{h1_title}</h1>
+<p><em>Updated {today_display}</em></p>
+""")
+
+        # ── DYNAMIC ARTICLE WRITER — replaces static templates ──
+        verified_intro_entities = _get_verified_entities(kw_lower, intent=intent)
+        verified_category_data = verified_intro_entities if verified_intro_entities else None
+        kw_plain = re.sub(r'^(best|top|free)\s+', '', kw_lower, flags=re.IGNORECASE).strip()
+
+        # Parse gap angles from user prompt
+        gap_angles = None
+        gap_m = re.search(r'<!-- GAP_ANGLES:(.*?)-->', user)
+        if gap_m:
+            try:
+                gap_angles = json.loads(gap_m.group(1))
+            except Exception:
+                pass
+
+        # ── AI-Enhanced E-E-A-T Article Writer ─────────────────
+        HAS_AI = bool(API_KEYS.get("anthropic") or API_KEYS.get("google") or API_KEYS.get("groq"))
+        ai_article = ""
+
+        if HAS_AI:
+            print(c("cyan", "  · AI E-E-A-T enhancement available — generating article with real LLM..."))
+
+            entities_context = ""
+            if verified_category_data:
+                for v in verified_category_data[:6]:
+                    strengths = ", ".join(v.get("strengths", [])[:2])
+                    weaknesses = ", ".join(v.get("weaknesses", [])[:2])
+                    pricing = v.get("pricing", "N/A")
+                    platforms = ", ".join(v.get("platforms", [])[:3])
+                    entities_context += f"- {v['name']}: ${pricing}, platforms={platforms}, strengths={strengths}, weaknesses={weaknesses}\n"
+
+            serp_context = ""
+            if search_results:
+                serp_context = "Top competing articles cover:\n" + "\n".join(f"  - {r[0][:80]}" for r in search_results[:5])
+
+            user_intent_label = intent
+            page_title_ai = f"{kw_title}: Complete Guide & Best Picks (2026)"
+
+            eeat_system = """You are an expert SEO content writer following Google's E-E-A-T framework strictly.
+
+ABSOLUTE RULES:
+1. Write as a REAL expert who personally tested these tools — use first-person observations
+2. Every claim must include: specific version numbers, real prices, actual limitations
+3. EXPERIENCE signals: "After two weeks of testing...", "In practice we found...", "The onboarding took us 3 days..."
+4. EXPERTISE signals: technical specs, benchmark numbers, model names, API details
+5. AUTHORITATIVENESS: cite specific update dates, version numbers, changelog items
+6. TRUSTWORTHINESS: always mention 1-2 genuine limitations, never claim "best" without conditions
+7. Minimum 2000 words — write a thorough deep-dive
+8. "AI" must ALWAYS be uppercase (never "Ai")
+9. For each tool reviewed, include a pro/con grid using <div class="pro-con"> with <div class="pro"> and <div class="con">
+10. Use <div class="tip">, <div class="note">, or <div class="warning"> callout boxes for emphasis throughout
+
+BANNED PHRASES (never use):
+- "This section examines..." / "Understanding this dimension..."
+- "In today's landscape..." / "It is worth noting that..."
+- "This comprehensive guide..." / "Here is what you need to know..."
+
+OUTPUT: Return ONLY the content for inside the page container — no <head>, no <style>, no <body>, no <!DOCTYPE> tags. Just the visible article HTML starting after the H1. I will handle the rest. Use only the CSS class names I specify — never inline styles."""
+
+            eeat_user = f"""Write a professional E-E-A-T optimized article about: "{kw}"
+Keyword intent: {user_intent_label}
+
+VERIFIED TOOLS/PRODUCTS WITH REAL DATA:
+{entities_context}
+
+SERP CONTEXT:
+{serp_context}
+
+REQUIRED STRUCTURE (exactly in this order):
+1. A strong 2-3 paragraph introduction with a unique hook — start with a specific observation from your testing
+2. For EACH major tool reviewed: H2 with id="tool-name" including:
+   - Bold rating "Rating: X.X/10"
+   - Pricing section with EXACT dollar amounts
+   - What it does well (2-3 specific points)
+   - Where it falls short (2-3 honest limitations)
+   - Who it is best for
+   - A <div class="pro-con"> with <div class="pro"><ul> and <div class="con"><ul>
+3. A thorough comparison table: <table class="comparison-table"> with header row
+4. "Who Should Use What" section with conditional guidance
+5. FAQ section: each question in <div class="faq-item"> with <div class="faq-q"> and <div class="faq-a">
+6. A "Hidden Costs Most Reviews Do Not Mention" section
+7. Final Verdict in <div class="verdict"> with separate "Best for X" sub-sections
+
+E-E-A-T SIGNALS REQUIRED:
+- Use "I tested X for Y weeks..." first-person language throughout
+- Mention exact pricing tiers like "$9.99/month", never "affordable" or "varies"
+- Compare tools directly: "X is better than Y for Z because..."
+- Include at least 3 specific micro-frustrations from real testing
+- Give conditional recommendations: "Choose X if you need Y, but pick Z if W matters more"
+- Include at least 2 free-tier tools or free alternatives
+- Add 1-2 callout boxes using <div class="tip"> or <div class="warning">
+
+USE THESE CSS CLASS NAMES (never inline styles):
+- <h2 id="section-name"> for all section headings
+- <table class="comparison-table"> for comparison tables
+- <div class="pro-con"> container for pro/con grids
+- <div class="pro"> and <div class="con"> inside pro-con
+- <div class="faq-item"> with <div class="faq-q"> and <div class="faq-a">
+- <div class="verdict"> for the final verdict
+- <div class="tip">, <div class="note">, <div class="warning"> for callout boxes
+
+OUTPUT: Return ONLY the HTML content that goes inside the page container. Start right after the H1. No <head>, no <style>, no <body>, no <html>, no <!DOCTYPE>. Content only."""
+
+            ai_raw = _call_ai_writer(eeat_system, eeat_user, stream=False)
+
+            if ai_raw and len(ai_raw.strip()) > 500:
+                json_ld_ai = _build_json_ld(kw, deduped_entities, [])
+                # Extract content: strip any accidental <head>/<body>/<html>/<style>/<meta> that AI may add
+                ai_body = ai_raw
+                for tag in ['<head>', '</head>', '<body>', '</body>', '<html>', '</html>', '<!DOCTYPE', '<style', '</style>', '<meta']:
+                    ai_body = re.sub(rf'(?is){re.escape(tag)}[^>]*>?', '', ai_body)
+                ai_body = ai_body.strip()
+                # Wrap with professional template matching reference article
+                author_name_ai = SETTINGS.get("author_name", "James Whitfield")
+                ai_article = _wrap_professional_article(ai_body, kw, kw_title, json_ld_ai, author_name_ai)
+                print(c("green", f"  ✓ AI article generated: ~{len(ai_article.split())} words"))
+            else:
+                print(c("yellow", "  ⚠ AI writer returned empty or too short — falling back to local generator"))
+
+        if not ai_article:
+            # Build article body from SERP data + content gaps using local generator
+            from seo.dynamic_writer import build_dynamic_article, post_process
+
+            article_sections = build_dynamic_article(
+                kw=kw, kw_title=kw_title, kw_lower=kw_lower,
+                intent=intent, sections=sections, arch=arch,
+                verified_intro_entities=verified_intro_entities,
+                verified_category_data=verified_category_data,
+                deduped_entities=deduped_entities,
+                all_headings=all_headings,
+                search_results=search_results,
+                gap_angles=gap_angles,
+            )
+            h.extend(article_sections)
+
+        # ── AI article: return immediately ──
+        if ai_article:
+            word_count_ai = len(ai_article.split())
+            print(c("dim", f"  · AI Article: ~{word_count_ai} words"))
+            if stream:
+                for line in ai_article.split("\n"):
+                    print(line)
+                    time.sleep(0.003)
+            return ai_article
+
+        # Self-evaluation (local article only)
+        faq_qas = []
+        if arch.get("allows_winner") and verified_category_data:
+            best = verified_category_data[0]
+            alt = verified_category_data[1]['name'] if len(verified_category_data) > 1 else 'alternatives in this guide'
+            faq_qas.append((f"What is the best {kw_plain} option?", f"The best all-around choice is {best['name']} ({best['pricing']}). It excels at {best['strengths'][0].lower()} and works on {', '.join(best['platforms'][:2])}. For specific use cases, {alt} may be a better fit."))
+            faq_qas.append((f"How much does {kw_plain} cost?", f"Prices range from {verified_category_data[0]['pricing']} to {verified_category_data[-1]['pricing']}. Free options exist, but premium tools typically offer better support and more features. Watch for hidden upsells — some tools quote a low base price then charge extra for essential features."))
+            faq_qas.append((f"Is {kw_plain} worth it?", f"For most users, yes — the right {kw_plain} saves time and reduces frustration. The key is matching the tool to your specific workflow rather than buying the most expensive option. Start with a free tier or trial; upgrade only when you hit a real limitation."))
+            faq_qas.append((f"How hard is it to switch {kw_plain} providers?", f"Easier than you think. {best['name']} and most modern {kw_plain} tools support direct import from competitors — the process takes under 30 minutes for typical setups. Export your data, import into the new tool, verify a few records, and you are done. The anticipation of switching is worse than the switch itself."))
+            faq_qas.append((f"Will I lose my data if I switch {kw_plain} tools?", f"No. Reputable {kw_plain} providers offer export features that let you download your data before migrating. {best['name']} supports standard export formats. Test the new tool with a small subset first, then migrate the rest once you are confident."))
+        elif intent == "educational":
+            faq_qas.append((f"What will I learn from this {kw_plain} guide?", f"This guide teaches you {kw_plain} from the ground up — no prior knowledge assumed. You will understand core concepts, follow step-by-step instructions, and build practical skills through exercises."))
+            faq_qas.append((f"How long does it take to complete this {kw_plain} guide?", f"Most learners complete the core sections in 1-2 focused sessions. The practice exercises and advanced topics can take additional time depending on your pace and prior experience."))
+            faq_qas.append((f"What do I need before starting {kw_plain}?", f"No specific prerequisites beyond basic computer skills. Each section builds on the previous one, so follow the progression in order for best results."))
+        elif intent == "news":
+            faq_qas.append((f"What is the latest {kw_plain} development?", f"This article covers the most recent developments in {kw_plain}, including what happened, why it matters, and what analysts are saying about the implications."))
+            faq_qas.append((f"Why does this {kw_plain} development matter?", f"These developments matter because they signal shifts in the underlying dynamics. Understanding the context helps you interpret future changes and position yourself accordingly."))
+            faq_qas.append((f"Where can I follow {kw_plain} updates?", f"Stay informed by following the key publications and analysts cited in this article. The landscape evolves quickly — regular monitoring is essential."))
+        elif intent == "informational":
+            faq_qas.append((f"What is {kw_plain} in simple terms?", f"{kw_title} is a concept that helps [do something]. This guide explains it in plain language, covers common misconceptions, and provides practical examples to make it click."))
+            faq_qas.append((f"Why does {kw_plain} matter?", f"Understanding {kw_plain} matters because it affects how [relevant domain] works. Knowing the basics helps you make informed decisions and avoid common pitfalls."))
+            faq_qas.append((f"Where can I learn more about {kw_plain}?", f"Start with the resources linked throughout this guide. The most reliable sources are primary documentation, peer-reviewed research, and practitioners with direct experience."))
+        elif intent == "trend_analysis":
+            faq_qas.append((f"What are the key {kw_plain} trends?", f"This analysis identifies the most important directional signals in {kw_plain}, evaluates their strength and durability, and models plausible scenarios for what comes next."))
+            faq_qas.append((f"How reliable are {kw_plain} trend predictions?", f"We rate each trend by confidence level and highlight what would change our assessment. The goal is better preparedness, not certainty."))
+            faq_qas.append((f"When should I act on {kw_plain} trends?", f"Timing depends on your position and risk tolerance. Our analysis helps you identify your window of opportunity based on current signals and scenario probabilities."))
+        else:
+            faq_qas.append((f"What is {kw_plain}?", f"{kw_title} encompasses a broad topic area. This guide covers the key concepts, trends, and practical considerations you need to understand."))
+            faq_qas.append((f"Why does {kw_plain} matter?", f"{kw_title} matters because it represents a significant development in how [relevant domain] operates. Understanding it helps you make better decisions in this space."))
+            faq_qas.append((f"Where can I learn more about {kw_plain}?", f"Start with the resources linked throughout this guide. The most reliable sources are primary documentation, peer-reviewed research, and practitioners with direct experience."))
+
+        json_ld = _build_json_ld(kw, deduped_entities, faq_qas)
+        h.append(f"\n{json_ld}\n")
+
+        article_html = "".join(h)
+
+        article_html = post_process(article_html, kw=kw, kw_lower=kw_lower, intent=intent)
+
+        # ── Intent-Aware Self-Evaluation ──
+        score = _self_evaluate(article_html, kw, deduped_entities, all_headings, intent=intent)
+
+        # ── Hard Fail Conditions ──
+        intent_fails = arch.get("fail_if", [])
+        hard_failures = []
+        ah_lower = article_html.lower()
+        for fail_pattern in intent_fails:
+            if fail_pattern in ah_lower:
+                hard_failures.append(fail_pattern)
+        if hard_failures:
+            print(c("red", f"  ✗ HARD FAIL ({intent}): {' · '.join(hard_failures)} present in output"))
+
+        # Add intent-specific persona audit
+        if intent == "news":
+            _persona_audits = [
+                f"Timeliness: {'✅ current' if any(d in ah_lower for d in ['today', 'this week', 'just happened', 'latest']) else '⚠ may feel dated'}",
+                f"Analyst Voice: {'✅ balanced' if all(c in ah_lower for c in ['analyst', 'signal', 'interpretation']) else '⚠ missing analyst framing'}",
+                f"Depth: {'✅ contextual' if 'why it matters' in ah_lower else '⚠ surface level'}",
+            ]
+        elif intent == "informational":
+            _persona_audits = [
+                f"Clarity: {'✅ explains well' if any(c in ah_lower for c in ['misconception', 'example', 'what it is']) else '⚠ may confuse'}",
+                f"Utility: {'✅ practical' if 'practical' in ah_lower else '⚠ may be abstract'}",
+                f"Trust: {'✅ nuanced' if 'nuanced' in ah_lower else '⚠ may oversimplify'}",
+            ]
+        elif intent == "educational":
+            _persona_audits = [
+                f"Progression: {'✅ scaffolds' if any(c in ah_lower for c in ['step', 'prerequisite', 'build']) else '⚠ may jump too fast'}",
+                f"Practice: {'✅ actionable' if 'exercise' in ah_lower else '⚠ may be passive'}",
+                f"Completion: {'✅ next steps clear' if 'next steps' in ah_lower else '⚠ may leave reader hanging'}",
+            ]
+        else:
+            _persona_audits = [
+                f"Beginner: {'✅ would trust' if all(c in ah_lower for c in ['best for', 'avoid if']) else '⚠ may hesitate'}",
+                f"Buyer: {'✅ would trust' if all(c in ah_lower for c in ['pricing', 'confidence', '/10']) else '⚠ may hesitate'}",
+                f"Expert: {'✅ would trust' if all(c in ah_lower for c in ['audited', 'migration', 'lock-in']) else '⚠ may hesitate'}",
+            ]
+
+        para_audit = _audit_paragraphs(article_html)
+        rewrite_needed = []
+
+        # Use intent-specific dimension labels
+        intent_dims = _INTENT_SELF_EVAL_DIMS.get(intent, _INTENT_SELF_EVAL_DIMS["commercial"])
+        dim_labels = {}
+        intent_dim_key_mapping = {
+            "decision_clarity": "Decision Clarity", "recommendation_quality": "Rec Quality",
+            "entity_quality": "Entity Quality", "emotional_realism": "Emotional Realism",
+            "trust_engineering": "Trust Eng", "pricing_depth": "Pricing Depth",
+            "comparison_depth": "Comparison Depth", "attention_retention": "Attention Retention",
+            "human_realism": "Human Realism", "narrative_continuity": "Narrative Cont",
+            "editorial_compression": "Compression", "authenticity_illusion": "Authenticity",
+            "decision_simplicity": "Decision Simp", "originality": "Originality",
+            "clarity": "Clarity", "usefulness": "Usefulness",
+            "insight_density": "Insight Density", "seo_depth": "SEO Depth",
+            "anti_generic": "Anti-Generic", "readability": "Readability",
+            "intent_match": "Intent Match", "topical_authority": "Topical Authority",
+            "timeliness": "Timeliness", "narrative_clarity": "Narrative Clarity",
+            "context_depth": "Context Depth", "bias_balance": "Bias Balance",
+            "signal_extraction": "Signal Extr.", "source_diversity": "Source Diversity",
+            "expert_voice": "Expert Voice", "explanation_quality": "Explanation Quality",
+            "example_quality": "Example Quality", "misconception_coverage": "Misconceptions",
+            "comprehension_flow": "Comprehension Flow", "teaching_progression": "Teaching Prog.",
+            "cognitive_load": "Cognitive Load", "practice_utility": "Practice Utility",
+            "tradeoff_depth": "Tradeoff Depth", "decision_friction": "Decision Friction",
+            "contextual_winner": "Contextual Winner",
+            "directional_insight": "Directional Insight", "uncertainty_honesty": "Uncertainty Honesty",
+            "scenario_quality": "Scenario Quality", "timing_awareness": "Timing Awareness",
+            "second_order_depth": "2nd Order Depth", "market_context": "Market Context",
+        }
+        for dim_key in intent_dims["dimensions"]:
+            label = intent_dim_key_mapping.get(dim_key, dim_key.replace("_", " ").title())
+            dim_labels[dim_key] = label
+
+        for dim_key, dim_label in dim_labels.items():
+            dim_score = score.get(dim_key, 10)
+            if dim_score < 8:
+                rewrite_needed.append(f"{dim_label}({dim_score})")
+        rewrite_warning = ""
+        if rewrite_needed:
+            weak_dims = ", ".join(rewrite_needed)
+            rewrite_warning = f"""
+<p style="color:#c00;font-weight:bold;border:1px solid #c00;padding:8px">⚠ Editorial Audit: {len(rewrite_needed)} dimension(s) below 8/10. Rewrite recommended for: {weak_dims} · Thin paragraphs: {para_audit['thin']}/{para_audit['total_p']}</p>"""
+        dims_line = " · ".join(f"{label}: {score.get(key, '?')}/10" for key, label in dim_labels.items())
+        rewrite_notes = _generate_rewrite_notes(score, article_html, kw, intent=intent)
+        persona_line = " · ".join(_persona_audits)
+        hard_fail_line = f" · HARD FAIL: {', '.join(hard_failures)}" if hard_failures else ""
+        h.append(f"""<!-- Editorial Audit
+Intent: {intent}
+Self-Evaluation Scores:
+{dims_line}
+Min: {score['min_score']}/10 · Passing: {score['passing']} · Total: {score['total']}/{score['max']}
+Paragraphs: {para_audit['total_p']} total, {para_audit['thin']} thin, {len(para_audit['ban_hits'])} ban hits
+Persona Simulation: {persona_line}{hard_fail_line}
+-->
+{rewrite_warning}
+{rewrite_notes}""")
+
+        h.append("""</body>
+</html>""")
+
+        article = "".join(h)
+
+        # ── E-E-A-T Post-cleanup: replace not delete ──
+        _REPLACE_LOCAL = {
+            "This section examines an important aspect of ": "",
+            "Understanding this dimension of ": "",
+            " requires looking past the obvious and considering the second-order effects that casual analysis misses.": ".",
+            "Addressing this gap directly gives you information that competitors will not provide — either because they have not done the analysis or because acknowledging it would undermine their recommendations.": "",
+        }
+        for old, new in _REPLACE_LOCAL.items():
+            article = article.replace(old, new)
+        article = re.sub(r'\s{2,}', ' ', article).strip()
+
+        word_count = len(article.split())
+        print(c("dim", f"  · Article: ~{word_count} words"))
+
+        if stream:
+            for line in article.split("\n"):
+                print(line)
+                time.sleep(0.003)
+        return article
+
+    # ── Fallback ───────────────────────────────────────────
+    fallback = f"Comprehensive information about {kw}. This covers all key aspects including tools, strategies, best practices, and expert recommendations."
+    if stream:
+        print(fallback)
+    return fallback
+
+
+# ──────────────────────────────────────────────────────────────
+#  Public API
+# ──────────────────────────────────────────────────────────────
+
+def call(
+    system: str,
+    user:   str,
+    model_name: str,
+    stream: bool = True,
+) -> str:
+    """
+    Route a prompt to the correct provider and return the response text.
+
+    Args:
+        system:     System prompt.
+        user:       User message.
+        model_name: Key from config.MODELS (e.g. "claude-sonnet-4").
+        stream:     Whether to stream tokens to stdout in real time.
+
+    Returns:
+        Full response string.
+    """
+    provider, model_id = validate_config(model_name)
+
+    print(c("dim", f"  ↳ {provider} / {model_id}"))
+
+    try:
+        if provider == "anthropic":
+            return _call_anthropic(model_id, system, user, stream)
+        elif provider == "openrouter":
+            return _call_openrouter(model_id, system, user, stream)
+        elif provider == "groq":
+            return _call_groq(model_id, system, user, stream)
+        elif provider == "google":
+            return _call_google(model_id, system, user, stream)
+        elif provider == "local":
+            return _call_local(system, user, stream)
+        else:
+            print(c("red", f"  ✗ Unknown provider: {provider}"))
+            sys.exit(1)
+
+    except urllib.error.HTTPError as e:
+        body = e.read().decode("utf-8", errors="replace")
+        print(c("red", f"\n  ✗ HTTP {e.code}: {e.reason}"))
+        print(c("dim", f"  {body[:300]}"))
+        sys.exit(1)
+
+    except Exception as e:
+        print(c("red", f"\n  ✗ Error calling {provider}: {e}"))
+        raise
+
+
+def call_json(system: str, user: str, model_name: str) -> dict | list:
+    """Call the model and parse the response as JSON."""
+    import re
+
+    system_j = system + "\n\nIMPORTANT: Return only valid JSON — no prose, no markdown fences."
+    raw      = call(system_j, user, model_name, stream=False)
+    if not raw:
+        return {}
+    raw      = re.sub(r"```(?:json)?", "", raw).strip()
+
+    try:
+        return json.loads(raw)
+    except json.JSONDecodeError:
+        match = re.search(r"[\[{][\s\S]*[\]}]", raw)
+        if match:
+            return json.loads(match.group())
+        raise ValueError(f"Could not parse JSON:\n{raw[:400]}")
+
+
+def list_models() -> None:
+    """Print all available models grouped by provider."""
+    providers: dict[str, list[str]] = {}
+    for name, (prov, mid) in MODELS.items():
+        providers.setdefault(prov, []).append((name, mid))
+
+    for prov, entries in providers.items():
+        key    = API_KEYS.get(prov, "")
+        status = c("green", "● key set") if key else c("red", "○ no key")
+        print(f"\n  {c('bold', prov.upper())}  {status}")
+        for name, mid in entries:
+            print(c("dim", f"    {name:<28} {mid}"))

@@ -1,0 +1,63 @@
+[
+  {
+    "month": 1,
+    "week": 1,
+    "title": "best AI tools for content creation: The Complete Guide",
+    "keyword": "best AI tools for content creation",
+    "type": "pillar",
+    "word_count": 2500,
+    "intent": "commercial",
+    "priority": "P1",
+    "links_to": []
+  },
+  {
+    "month": 1,
+    "week": 2,
+    "title": "Getting Started with best AI tools for content creation",
+    "keyword": "best AI tools for content creation basics",
+    "type": "cluster",
+    "word_count": 1500,
+    "intent": "informational",
+    "priority": "P1",
+    "links_to": [
+      "best AI tools for content creation"
+    ]
+  },
+  {
+    "month": 1,
+    "week": 3,
+    "title": "Top best AI tools for content creation Solutions",
+    "keyword": "best best AI tools for content creation",
+    "type": "cluster",
+    "word_count": 1800,
+    "intent": "commercial",
+    "priority": "P1",
+    "links_to": [
+      "best AI tools for content creation"
+    ]
+  },
+  {
+    "month": 1,
+    "week": 4,
+    "title": "best AI tools for content creation FAQ and Common Questions",
+    "keyword": "best AI tools for content creation questions",
+    "type": "long-tail",
+    "word_count": 1200,
+    "intent": "informational",
+    "priority": "P2",
+    "links_to": []
+  },
+  {
+    "month": 2,
+    "week": 1,
+    "title": "best AI tools for content creation vs What",
+    "keyword": "best AI tools for content creation vs What",
+    "type": "cluster",
+    "word_count": 2000,
+    "intent": "commercial",
+    "priority": "P1",
+    "links_to": [
+      "best AI tools for content creation"
+    ]
+  }
+]

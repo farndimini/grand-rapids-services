@@ -1,0 +1,57 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.jsonl
+.env
+.env.example
+
+# Generated content stores
+replay_store/
+quarantine_store/
+repair_store/
+truth_store/
+governor_store/
+cache_store/
+vector_store/
+memory_backups/
+checkpoints/
+site_graph_store/
+
+# Tests
+tests/
+.pytest_cache/
+
+# Logs & reports
+*.log
+AUDIT_REPORT*.md
+ARCHITECTURE_REPORT*.md
+PROMPT_INJECTION_TRACE_REPORT.md
+DISTRIBUTED_MIGRATION_NOTES.md
+FALLBACK_VISIBILITY_REPORT.md
+RUNTIME_VERIFICATION_MATRIX.md
+SHUTDOWN_CORRUPTION_REPORT.md
+
+# IDE
+.vscode/
+.idea/
+*.sublime-*
+
+# Secrets
+gsc-credentials.json
+*credentials*
+test_groq.py
+test_gemini.py
+
+# Benchmarks & output
+benchmarks/
+output/
+cache/
+
+# Project-specific (optional, uncomment if you want local-only)
+# projects/grand_rapids/articles/
+# projects/grand_rapids/emergency/
+# projects/grand_rapids/same_day/
+# projects/grand_rapids/affordable/
+# projects/grand_rapids/near_me/
+# projects/grand_rapids/24_hour/

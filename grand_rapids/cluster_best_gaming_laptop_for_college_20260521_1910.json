@@ -1,0 +1,60 @@
+{
+  "pillar": {
+    "keyword": "best gaming laptop for college",
+    "intent": "informational",
+    "word_count": 1500,
+    "title": "Best Gaming Laptops for College Students: Top Picks and Buying Guide"
+  },
+  "clusters": [
+    {
+      "keyword": "gaming laptop requirements for college",
+      "type": "informational",
+      "priority": "high",
+      "estimated_volume": "medium",
+      "title": "Gaming Laptop Requirements for College: What to Look For"
+    },
+    {
+      "keyword": "best gaming laptops under $1000 for college",
+      "type": "commercial",
+      "priority": "high",
+      "estimated_volume": "high",
+      "title": "Best Gaming Laptops Under $1000 for College Students"
+    },
+    {
+      "keyword": "laptop specs for gaming and college work",
+      "type": "informational",
+      "priority": "medium",
+      "estimated_volume": "medium",
+      "title": "Laptop Specs for Gaming and College Work: Finding the Right Balance"
+    },
+    {
+      "keyword": "gaming laptop brands for college students",
+      "type": "informational",
+      "priority": "low",
+      "estimated_volume": "low",
+      "title": "Gaming Laptop Brands for College Students: A Comparison"
+    }
+  ],
+  "long_tail": [
+    "best gaming laptops for college students 2024",
+    "gaming laptops for college under $800",
+    "best laptops for gaming and video editing in college",
+    "top gaming laptops for college freshmen",
+    "gaming laptops for college with good battery life"
+  ],
+  "internal_link_map": {
+    "pillar_to_clusters": [
+      "gaming laptop requirements for college",
+      "best gaming laptops under $1000 for college"
+    ],
+    "cluster_to_cluster": [
+      "laptop specs for gaming and college work",
+      "gaming laptop brands for college students"
+    ]
+  },
+  "quick_wins": [
+    "best gaming laptops for college students on a budget",
+    "gaming laptops for college with NVIDIA graphics"
+  ],
+  "authority_path": "Start with pillar content, then create cluster articles, and finally optimize for long-tail keywords and internal linking"
+}

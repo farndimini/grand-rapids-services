@@ -1,0 +1,570 @@
+{
+  "articles_written": [
+    {
+      "keyword": "hybrid test kw",
+      "model": "local",
+      "word_count": 6,
+      "date": "2026-05-20T19:15:33.209238",
+      "quality_score": 90
+    },
+    {
+      "keyword": "hybrid test kw",
+      "model": "local",
+      "word_count": 6,
+      "date": "2026-05-20T19:21:46.871728",
+      "quality_score": 90
+    },
+    {
+      "keyword": "hybrid test kw",
+      "model": "local",
+      "word_count": 6,
+      "date": "2026-05-20T21:52:39.146838",
+      "quality_score": 90
+    },
+    {
+      "keyword": "hybrid test kw",
+      "model": "local",
+      "word_count": 6,
+      "date": "2026-05-20T22:02:35.022600",
+      "quality_score": 90
+    },
+    {
+      "keyword": "hybrid test kw",
+      "model": "local",
+      "word_count": 6,
+      "date": "2026-05-20T22:26:13.033631",
+      "quality_score": 90
+    },
+    {
+      "keyword": "hybrid test kw",
+      "model": "local",
+      "word_count": 6,
+      "date": "2026-05-20T22:39:04.661123",
+      "quality_score": 90
+    },
+    {
+      "keyword": "best gaming laptop 2026",
+      "model": "local",
+      "word_count": 2592,
+      "date": "2026-05-20T22:43:10.991097",
+      "quality_score": 0
+    },
+    {
+      "keyword": "best gaming laptop 2026",
+      "model": "local",
+      "word_count": 2481,
+      "date": "2026-05-21T00:00:40.974920",
+      "quality_score": 0
+    },
+    {
+      "keyword": "best focus timer chrome extension 2026",
+      "model": "local",
+      "word_count": 3365,
+      "date": "2026-05-21T00:22:14.992139",
+      "quality_score": 0
+    },
+    {
+      "keyword": "best email marketing software",
+      "model": "local",
+      "word_count": 2305,
+      "date": "2026-05-21T01:17:29.107764",
+      "quality_score": 0
+    },
+    {
+      "keyword": "best protein powder for muscle gain",
+      "model": "local",
+      "word_count": 2423,
+      "date": "2026-05-21T01:33:28.339545",
+      "quality_score": 0
+    },
+    {
+      "keyword": "best VPS hosting for developers",
+      "model": "local",
+      "word_count": 2535,
+      "date": "2026-05-21T01:35:07.737642",
+      "quality_score": 0
+    },
+    {
+      "keyword": "hybrid test kw",
+      "model": "local",
+      "word_count": 6,
+      "date": "2026-05-21T13:12:04.380309",
+      "quality_score": 90
+    },
+    {
+      "keyword": "best gaming laptop for college",
+      "model": "llama-3.3-70b-groq",
+      "word_count": 1630,
+      "date": "2026-05-21T19:17:02.001593",
+      "quality_score": 0
+    },
+    {
+      "keyword": "best RTX 5090 laptops",
+      "model": "llama-3.3-70b-groq",
+      "word_count": 2240,
+      "date": "2026-05-21T19:29:12.617104",
+      "quality_score": 0
+    },
+    {
+      "keyword": "RTX 6090 benchmark leaked",
+      "model": "local",
+      "word_count": 2631,
+      "date": "2026-05-21T19:48:08.206117",
+      "quality_score": 0
+    },
+    {
+      "keyword": "appliance repair grand rapids",
+      "model": "local",
+      "word_count": 1414,
+      "date": "2026-05-23T01:25:27.301039",
+      "quality_score": 0
+    }
+  ],
+  "clusters": {
+    "hybrid test kw": {
+      "pillar": {
+        "keyword": "hybrid test kw",
+        "intent": "educational",
+        "word_count": 2500,
+        "title": "hybrid test kw: The Complete Guide"
+      },
+      "clusters": [
+        {
+          "keyword": "hybrid test kw for beginners",
+          "type": "informational",
+          "priority": "high",
+          "estimated_volume": "medium",
+          "title": "hybrid test kw for Beginners: Getting Started"
+        },
+        {
+          "keyword": "best hybrid test kw options",
+          "type": "commercial",
+          "priority": "high",
+          "estimated_volume": "high",
+          "title": "Best hybrid test kw Options in 2026"
+        },
+        {
+          "keyword": "hybrid test kw guide",
+          "type": "informational",
+          "priority": "high",
+          "estimated_volume": "high",
+          "title": "The Complete hybrid test kw Guide"
+        },
+        {
+          "keyword": "hybrid test kw tips and tricks",
+          "type": "informational",
+          "priority": "medium",
+          "estimated_volume": "medium",
+          "title": "Advanced hybrid test kw Tips"
+        },
+        {
+          "keyword": "hybrid test kw vs alternatives",
+          "type": "commercial",
+          "priority": "medium",
+          "estimated_volume": "medium",
+          "title": "hybrid test kw vs The Competition"
+        },
+        {
+          "keyword": "hybrid test kw and Hybrid Electric",
+          "type": "commercial",
+          "priority": "medium",
+          "estimated_volume": "low",
+          "title": "hybrid test kw with Hybrid Electric"
+        }
+      ],
+      "long_tail": [
+        "hybrid test kw power",
+        "hybrid test kw converters",
+        "hybrid test kw ev1003a",
+        "hybrid test kw keysight",
+        "hybrid test kw electric",
+        "how to hybrid test kw",
+        "why hybrid test kw matters"
+      ],
+      "internal_link_map": {
+        "pillar_to_clusters": [
+          "hybrid test kw for beginners",
+          "best hybrid test kw options",
+          "hybrid test kw guide"
+        ],
+        "cluster_to_cluster": []
+      },
+      "quick_wins": [
+        "hybrid test kw basics",
+        "simple hybrid test kw strategies"
+      ],
+      "authority_path": "Start with pillar, then weekly cluster articles"
+    },
+    "best gaming laptop 2026": {
+      "pillar": {
+        "keyword": "best gaming laptop 2026",
+        "intent": "commercial",
+        "word_count": 2500,
+        "title": "best gaming laptop 2026: The Complete Guide"
+      },
+      "clusters": [
+        {
+          "keyword": "best gaming laptop 2026 for beginners",
+          "type": "informational",
+          "priority": "high",
+          "estimated_volume": "medium",
+          "title": "best gaming laptop 2026 for Beginners: Getting Started"
+        },
+        {
+          "keyword": "best best gaming laptop 2026 options",
+          "type": "commercial",
+          "priority": "high",
+          "estimated_volume": "high",
+          "title": "Best best gaming laptop 2026 Options in 2026"
+        },
+        {
+          "keyword": "best gaming laptop 2026 guide",
+          "type": "informational",
+          "priority": "high",
+          "estimated_volume": "high",
+          "title": "The Complete best gaming laptop 2026 Guide"
+        },
+        {
+          "keyword": "best gaming laptop 2026 tips and tricks",
+          "type": "informational",
+          "priority": "medium",
+          "estimated_volume": "medium",
+          "title": "Advanced best gaming laptop 2026 Tips"
+        },
+        {
+          "keyword": "best gaming laptop 2026 vs alternatives",
+          "type": "commercial",
+          "priority": "medium",
+          "estimated_volume": "medium",
+          "title": "best gaming laptop 2026 vs The Competition"
+        },
+        {
+          "keyword": "best gaming laptop 2026 and The Best Gaming Laptops",
+          "type": "commercial",
+          "priority": "medium",
+          "estimated_volume": "low",
+          "title": "best gaming laptop 2026 with The Best Gaming Laptops"
+        }
+      ],
+      "long_tail": [
+        "best gaming laptop 2026 laptops",
+        "best gaming laptop 2026 we&#x27;ve",
+        "best gaming laptop 2026 tested",
+        "best gaming laptop 2026 pcmag",
+        "best gaming laptop 2026 laptops",
+        "how to best gaming laptop 2026",
+        "why best gaming laptop 2026 matters"
+      ],
+      "internal_link_map": {
+        "pillar_to_clusters": [
+          "best gaming laptop 2026 for beginners",
+          "best best gaming laptop 2026 options",
+          "best gaming laptop 2026 guide"
+        ],
+        "cluster_to_cluster": []
+      },
+      "quick_wins": [
+        "best gaming laptop 2026 basics",
+        "simple best gaming laptop 2026 strategies"
+      ],
+      "authority_path": "Start with pillar, then weekly cluster articles"
+    },
+    "best gaming laptop for college": {
+      "pillar": {
+        "keyword": "best gaming laptop for college",
+        "intent": "informational",
+        "word_count": 1500,
+        "title": "Best Gaming Laptops for College Students: Top Picks and Buying Guide"
+      },
+      "clusters": [
+        {
+          "keyword": "gaming laptop requirements for college",
+          "type": "informational",
+          "priority": "high",
+          "estimated_volume": "medium",
+          "title": "Gaming Laptop Requirements for College: What to Look For"
+        },
+        {
+          "keyword": "best gaming laptops under $1000 for college",
+          "type": "commercial",
+          "priority": "high",
+          "estimated_volume": "high",
+          "title": "Best Gaming Laptops Under $1000 for College Students"
+        },
+        {
+          "keyword": "laptop specs for gaming and college work",
+          "type": "informational",
+          "priority": "medium",
+          "estimated_volume": "medium",
+          "title": "Laptop Specs for Gaming and College Work: Finding the Right Balance"
+        },
+        {
+          "keyword": "gaming laptop brands for college students",
+          "type": "informational",
+          "priority": "low",
+          "estimated_volume": "low",
+          "title": "Gaming Laptop Brands for College Students: A Comparison"
+        }
+      ],
+      "long_tail": [
+        "best gaming laptops for college students 2024",
+        "gaming laptops for college under $800",
+        "best laptops for gaming and video editing in college",
+        "top gaming laptops for college freshmen",
+        "gaming laptops for college with good battery life"
+      ],
+      "internal_link_map": {
+        "pillar_to_clusters": [
+          "gaming laptop requirements for college",
+          "best gaming laptops under $1000 for college"
+        ],
+        "cluster_to_cluster": [
+          "laptop specs for gaming and college work",
+          "gaming laptop brands for college students"
+        ]
+      },
+      "quick_wins": [
+        "best gaming laptops for college students on a budget",
+        "gaming laptops for college with NVIDIA graphics"
+      ],
+      "authority_path": "Start with pillar content, then create cluster articles, and finally optimize for long-tail keywords and internal linking"
+    },
+    "RTX 6090 benchmark leaked": {
+      "pillar": {
+        "keyword": "RTX 6090 benchmark leaked",
+        "intent": "news",
+        "word_count": 2500,
+        "title": "RTX 6090 benchmark leaked: The Complete Guide"
+      },
+      "clusters": [
+        {
+          "keyword": "RTX 6090 benchmark leaked for beginners",
+          "type": "informational",
+          "priority": "high",
+          "estimated_volume": "medium",
+          "title": "RTX 6090 benchmark leaked for Beginners: Getting Started"
+        },
+        {
+          "keyword": "best RTX 6090 benchmark leaked options",
+          "type": "commercial",
+          "priority": "high",
+          "estimated_volume": "high",
+          "title": "Best RTX 6090 benchmark leaked Options in 2026"
+        },
+        {
+          "keyword": "RTX 6090 benchmark leaked guide",
+          "type": "informational",
+          "priority": "high",
+          "estimated_volume": "high",
+          "title": "The Complete RTX 6090 benchmark leaked Guide"
+        },
+        {
+          "keyword": "RTX 6090 benchmark leaked tips and tricks",
+          "type": "informational",
+          "priority": "medium",
+          "estimated_volume": "medium",
+          "title": "Advanced RTX 6090 benchmark leaked Tips"
+        },
+        {
+          "keyword": "RTX 6090 benchmark leaked vs alternatives",
+          "type": "commercial",
+          "priority": "medium",
+          "estimated_volume": "medium",
+          "title": "RTX 6090 benchmark leaked vs The Competition"
+        },
+        {
+          "keyword": "RTX 6090 benchmark leaked and Nvidia",
+          "type": "commercial",
+          "priority": "medium",
+          "estimated_volume": "low",
+          "title": "RTX 6090 benchmark leaked with Nvidia"
+        }
+      ],
+      "long_tail": [
+        "rtx 6090 benchmark leaked series",
+        "rtx 6090 benchmark leaked leaks",
+        "rtx 6090 benchmark leaked everywhere",
+        "rtx 6090 benchmark leaked nvidia",
+        "rtx 6090 benchmark leaked hasn&#x27;t",
+        "how to rtx 6090 benchmark leaked",
+        "why rtx 6090 benchmark leaked matters"
+      ],
+      "internal_link_map": {
+        "pillar_to_clusters": [
+          "RTX 6090 benchmark leaked for beginners",
+          "best RTX 6090 benchmark leaked options",
+          "RTX 6090 benchmark leaked guide"
+        ],
+        "cluster_to_cluster": []
+      },
+      "quick_wins": [
+        "RTX 6090 benchmark leaked basics",
+        "simple RTX 6090 benchmark leaked strategies"
+      ],
+      "authority_path": "Start with pillar, then weekly cluster articles"
+    },
+    "appliance repair grand rapids": {
+      "pillar": {
+        "keyword": "appliance repair grand rapids",
+        "intent": "local_service",
+        "word_count": 2500,
+        "title": "appliance repair grand rapids: The Complete Guide"
+      },
+      "clusters": [
+        {
+          "keyword": "appliance repair grand rapids for beginners",
+          "type": "informational",
+          "priority": "high",
+          "estimated_volume": "medium",
+          "title": "appliance repair grand rapids for Beginners: Getting Started"
+        },
+        {
+          "keyword": "best appliance repair grand rapids options",
+          "type": "commercial",
+          "priority": "high",
+          "estimated_volume": "high",
+          "title": "Best appliance repair grand rapids Options in 2026"
+        },
+        {
+          "keyword": "appliance repair grand rapids guide",
+          "type": "informational",
+          "priority": "high",
+          "estimated_volume": "high",
+          "title": "The Complete appliance repair grand rapids Guide"
+        },
+        {
+          "keyword": "appliance repair grand rapids tips and tricks",
+          "type": "informational",
+          "priority": "medium",
+          "estimated_volume": "medium",
+          "title": "Advanced appliance repair grand rapids Tips"
+        },
+        {
+          "keyword": "appliance repair grand rapids vs alternatives",
+          "type": "commercial",
+          "priority": "medium",
+          "estimated_volume": "medium",
+          "title": "appliance repair grand rapids vs The Competition"
+        },
+        {
+          "keyword": "appliance repair grand rapids and Google",
+          "type": "commercial",
+          "priority": "medium",
+          "estimated_volume": "low",
+          "title": "appliance repair grand rapids with Google"
+        }
+      ],
+      "long_tail": [
+        "appliance repair grand rapids best",
+        "appliance repair grand rapids appliances",
+        "appliance repair grand rapids &amp",
+        "appliance repair grand rapids yelp",
+        "appliance repair grand rapids best",
+        "how to appliance repair grand rapids",
+        "why appliance repair grand rapids matters"
+      ],
+      "internal_link_map": {
+        "pillar_to_clusters": [
+          "appliance repair grand rapids for beginners",
+          "best appliance repair grand rapids options",
+          "appliance repair grand rapids guide"
+        ],
+        "cluster_to_cluster": []
+      },
+      "quick_wins": [
+        "appliance repair grand rapids basics",
+        "simple appliance repair grand rapids strategies"
+      ],
+      "authority_path": "Start with pillar, then weekly cluster articles"
+    }
+  },
+  "authority_scores": {},
+  "successful_patterns": [],
+  "failed_patterns": [
+    {
+      "type": "opener",
+      "value": "after_X_weeks_testing",
+      "keyword": "best gaming laptop 2026",
+      "score": 0
+    }
+  ],
+  "keyword_styles": {
+    "hybrid test kw": {
+      "article_count": 7,
+      "avg_quality": 90.0,
+      "avg_word_count": 6.0,
+      "high_performing_sections": [],
+      "best_opener": "Hybrid backend article content dual write"
+    },
+    "best gaming laptop 2026": {
+      "article_count": 2,
+      "avg_quality": 0.0,
+      "avg_word_count": 2536.5,
+      "high_performing_sections": []
+    },
+    "best focus timer chrome extension 2026": {
+      "article_count": 1,
+      "avg_quality": 0.0,
+      "avg_word_count": 3365.0,
+      "high_performing_sections": []
+    },
+    "best email marketing software": {
+      "article_count": 1,
+      "avg_quality": 0.0,
+      "avg_word_count": 2305.0,
+      "high_performing_sections": []
+    },
+    "best protein powder for muscle gain": {
+      "article_count": 1,
+      "avg_quality": 0.0,
+      "avg_word_count": 2423.0,
+      "high_performing_sections": []
+    },
+    "best vps hosting for developers": {
+      "article_count": 1,
+      "avg_quality": 0.0,
+      "avg_word_count": 2535.0,
+      "high_performing_sections": []
+    },
+    "best gaming laptop for college": {
+      "article_count": 1,
+      "avg_quality": 0.0,
+      "avg_word_count": 1630.0,
+      "high_performing_sections": []
+    },
+    "best rtx 5090 laptops": {
+      "article_count": 1,
+      "avg_quality": 0.0,
+      "avg_word_count": 2240.0,
+      "high_performing_sections": []
+    },
+    "rtx 6090 benchmark leaked": {
+      "article_count": 1,
+      "avg_quality": 0.0,
+      "avg_word_count": 2631.0,
+      "high_performing_sections": []
+    },
+    "appliance repair grand rapids": {
+      "article_count": 1,
+      "avg_quality": 0.0,
+      "avg_word_count": 1414.0,
+      "high_performing_sections": []
+    }
+  },
+  "niche_profiles": {},
+  "keywords_done": [
+    "hybrid test kw",
+    "best gaming laptop 2026",
+    "best focus timer chrome extension 2026",
+    "best email marketing software",
+    "best protein powder for muscle gain",
+    "best VPS hosting for developers",
+    "best gaming laptop for college",
+    "best RTX 5090 laptops",
+    "RTX 6090 benchmark leaked",
+    "appliance repair grand rapids"
+  ],
+  "total_runs": 17,
+  "created_at": "2026-05-20T19:15:33.208775",
+  "updated_at": "2026-05-23T01:25:27.310761"
+}

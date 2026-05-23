@@ -1,0 +1,108 @@
+{
+  "appliance repair": [
+    {
+      "reviewer": "Mark T.",
+      "area": "East Grand Rapids",
+      "rating": "5",
+      "text": "Technician arrived within 40 minutes on a Saturday. Fixed our refrigerator compressor in under an hour. Fair price, no upselling."
+    },
+    {
+      "reviewer": "Sarah K.",
+      "area": "Kentwood",
+      "rating": "5",
+      "text": "Dishwasher stopped draining. Called in the morning, they came by afternoon. Replaced the pump and it's been running perfectly since."
+    },
+    {
+      "reviewer": "David R.",
+      "area": "Wyoming",
+      "rating": "4",
+      "text": "Dryer was making a loud noise. Tech diagnosed it as a worn drum bearing. Quote was reasonable and repair took about 90 minutes."
+    },
+    {
+      "reviewer": "Linda M.",
+      "area": "Heritage Hill",
+      "rating": "5",
+      "text": "Our oven stopped heating. They diagnosed a faulty igniter same-day and had the part in stock. Back to baking by dinner."
+    },
+    {
+      "reviewer": "Tom W.",
+      "area": "Walker",
+      "rating": "4",
+      "text": "Washing machine wouldn't spin. Tech came out next day, fixed the lid switch in 20 minutes. No minimum service fee which was nice."
+    }
+  ],
+  "garage door repair": [
+    {
+      "reviewer": "Jennifer P.",
+      "area": "Cascade",
+      "rating": "5",
+      "text": "Spring broke on a Sunday morning. Called and someone was here within 2 hours. Replaced both springs and checked the whole system."
+    },
+    {
+      "reviewer": "Mike L.",
+      "area": "East Beltline",
+      "rating": "5",
+      "text": "Garage door wouldn't close. Sensor alignment was off after we bumped it. Tech fixed it in 15 minutes and didn't charge a service fee."
+    },
+    {
+      "reviewer": "Rachel S.",
+      "area": "Ada",
+      "rating": "4",
+      "text": "Opener stopped working. They replaced the motor unit same-day. Technician explained what failed and showed me how to maintain it."
+    },
+    {
+      "reviewer": "Brian C.",
+      "area": "Grandville",
+      "rating": "5",
+      "text": "Panel was dented from a backing incident. They matched the color perfectly and had it installed within 3 days. Looks great."
+    }
+  ],
+  "garage door installation": [
+    {
+      "reviewer": "Kevin H.",
+      "area": "Rockford",
+      "rating": "5",
+      "text": "New insulated door installed in a day. Team was professional, cleaned up everything, and old door was hauled away. Price was competitive."
+    },
+    {
+      "reviewer": "Amy D.",
+      "area": "East Grand Rapids",
+      "rating": "5",
+      "text": "Replaced our old wooden door with a modern steel one. Looks fantastic. Installation crew was punctual and neat."
+    },
+    {
+      "reviewer": "Paul N.",
+      "area": "Jenison",
+      "rating": "4",
+      "text": "Installed a carriage-style door with smart opener. Took about 6 hours. Works great with our smart home system. Would recommend."
+    }
+  ],
+  "basement remodel": [
+    {
+      "reviewer": "Chris B.",
+      "area": "Alger Heights",
+      "rating": "5",
+      "text": "Finished our basement into a home theater and guest room. Project took about 4 weeks. Communication was excellent throughout."
+    },
+    {
+      "reviewer": "Heather J.",
+      "area": "Forest Hills",
+      "rating": "5",
+      "text": "Added a bathroom and wet bar to our basement. Crew was respectful, finished on schedule. Permits were handled properly."
+    }
+  ],
+  "shower remodel": [
+    {
+      "reviewer": "Lisa N.",
+      "area": "Midtown",
+      "rating": "5",
+      "text": "Converted our tub to a walk-in shower with tile surround. Took 5 days. The tile work is beautiful and the crew was meticulous."
+    },
+    {
+      "reviewer": "Robert F.",
+      "area": "Kentwood",
+      "rating": "4",
+      "text": "Replaced old shower pan and fixtures. Quality work, good communication. Only minor delay on glass enclosure delivery."
+    }
+  ]
+}

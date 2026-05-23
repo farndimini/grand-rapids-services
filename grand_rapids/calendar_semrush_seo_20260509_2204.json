@@ -1,0 +1,63 @@
+[
+  {
+    "month": 1,
+    "week": 1,
+    "title": "semrush seo: The Complete Guide",
+    "keyword": "semrush seo",
+    "type": "pillar",
+    "word_count": 2500,
+    "intent": "news",
+    "priority": "P1",
+    "links_to": []
+  },
+  {
+    "month": 1,
+    "week": 2,
+    "title": "Getting Started with semrush seo",
+    "keyword": "semrush seo basics",
+    "type": "cluster",
+    "word_count": 1500,
+    "intent": "informational",
+    "priority": "P1",
+    "links_to": [
+      "semrush seo"
+    ]
+  },
+  {
+    "month": 1,
+    "week": 3,
+    "title": "Top semrush seo Solutions",
+    "keyword": "best semrush seo",
+    "type": "cluster",
+    "word_count": 1800,
+    "intent": "commercial",
+    "priority": "P1",
+    "links_to": [
+      "semrush seo"
+    ]
+  },
+  {
+    "month": 1,
+    "week": 4,
+    "title": "semrush seo FAQ and Common Questions",
+    "keyword": "semrush seo questions",
+    "type": "long-tail",
+    "word_count": 1200,
+    "intent": "informational",
+    "priority": "P2",
+    "links_to": []
+  },
+  {
+    "month": 2,
+    "week": 1,
+    "title": "semrush seo vs From",
+    "keyword": "semrush seo vs From",
+    "type": "cluster",
+    "word_count": 2000,
+    "intent": "commercial",
+    "priority": "P1",
+    "links_to": [
+      "semrush seo"
+    ]
+  }
+]

@@ -1,0 +1,37 @@
+{
+  "name": "Grand Rapids Home Services",
+  "phone": "(616) 555-0147",
+  "phone_link": "+16165550147",
+  "address": "1234 Plainfield Ave NE",
+  "city": "Grand Rapids",
+  "state": "MI",
+  "zip": "49505",
+  "email": "hello@grandrapidshomeservices.com",
+  "site_url": "https://yoursite.com",
+  "licenses": {
+    "general": "Licensed in Michigan \u00b7 Bonded \u00b7 Insured",
+    "contractor": "Michigan Residential Builder License #2101234567",
+    "appliance": "Michigan Appliance Service License #AS-8901234",
+    "garage_door": "Michigan Garage Door Contractor License #GD-5678901"
+  },
+  "insurance": "General liability: $2M \u00b7 Workers comp: statutory coverage",
+  "founded_year": 2015,
+  "service_radius_miles": 40,
+  "coordinates": {
+    "latitude": 42.9634,
+    "longitude": -85.6681
+  },
+  "brand_voice": {
+    "tone": "professional, local, trustworthy",
+    "avoid": [
+      "we think",
+      "in our opinion",
+      "we believe"
+    ],
+    "prefer": [
+      "our technicians",
+      "we provide",
+      "call us for"
+    ]
+  }
+}

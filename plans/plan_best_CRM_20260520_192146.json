@@ -1,0 +1,134 @@
+{
+  "plan_id": "plan_best_CRM_20260520_192146",
+  "keyword": "best CRM",
+  "niche": "tech",
+  "model": "gpt-4o",
+  "budget_mode": false,
+  "created_at": "2026-05-20T19:21:46.710499",
+  "adaptive_params": {
+    "target_length": 2500,
+    "required_sections": 8
+  },
+  "steps": [
+    {
+      "name": "fetch_serp",
+      "type": "FETCH_SERP",
+      "params": {
+        "keyword": "best CRM",
+        "max_competitors": 5
+      },
+      "condition": "",
+      "fallback_step": "",
+      "retries": 2,
+      "timeout_sec": 30.0
+    },
+    {
+      "name": "detect_intent",
+      "type": "DETECT_INTENT",
+      "params": {
+        "keyword": "best CRM"
+      },
+      "condition": "",
+      "fallback_step": "",
+      "retries": 1,
+      "timeout_sec": 90.0
+    },
+    {
+      "name": "identify_gaps",
+      "type": "IDENTIFY_GAPS",
+      "params": {
+        "keyword": "best CRM"
+      },
+      "condition": "",
+      "fallback_step": "",
+      "retries": 1,
+      "timeout_sec": 90.0
+    },
+    {
+      "name": "generate_outline",
+      "type": "GENERATE_OUTLINE",
+      "params": {
+        "keyword": "best CRM",
+        "niche": "tech"
+      },
+      "condition": "",
+      "fallback_step": "",
+      "retries": 1,
+      "timeout_sec": 90.0
+    },
+    {
+      "name": "generate_article",
+      "type": "GENERATE_ARTICLE",
+      "params": {
+        "keyword": "best CRM",
+        "model": "gpt-4o",
+        "budget_mode": false
+      },
+      "condition": "",
+      "fallback_step": "",
+      "retries": 1,
+      "timeout_sec": 120.0
+    },
+    {
+      "name": "validate_article",
+      "type": "VALIDATE",
+      "params": {
+        "keyword": "best CRM"
+      },
+      "condition": "quality >= 60",
+      "fallback_step": "rewrite_weak",
+      "retries": 0,
+      "timeout_sec": 90.0
+    },
+    {
+      "name": "rewrite_weak",
+      "type": "REWRITE_WEAK",
+      "params": {
+        "keyword": "best CRM",
+        "max_attempts": 1
+      },
+      "condition": "quality < 60",
+      "fallback_step": "generate_article",
+      "retries": 1,
+      "timeout_sec": 90.0
+    },
+    {
+      "name": "optimize_ctr",
+      "type": "CTR_OPTIMIZE",
+      "params": {
+        "keyword": "best CRM",
+        "model": "gpt-4o"
+      },
+      "condition": "",
+      "fallback_step": "",
+      "retries": 1,
+      "timeout_sec": 90.0
+    },
+    {
+      "name": "build_cluster",
+      "type": "CLUSTER_BUILD",
+      "params": {
+        "keyword": "best CRM",
+        "niche": "tech",
+        "model": "gpt-4o"
+      },
+      "condition": "",
+      "fallback_step": "",
+      "retries": 1,
+      "timeout_sec": 90.0
+    },
+    {
+      "name": "build_calendar",
+      "type": "CALENDAR_BUILD",
+      "params": {
+        "keyword": "best CRM",
+        "niche": "tech",
+        "model": "gpt-4o"
+      },
+      "condition": "",
+      "fallback_step": "",
+      "retries": 1,
+      "timeout_sec": 90.0
+    }
+  ]
+}

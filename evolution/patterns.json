@@ -1,0 +1,58 @@
+[
+  {
+    "pattern_type": "quality_strategy",
+    "value": "high_quality:best_laptop",
+    "avg_reward": 0.9000000000000001,
+    "occurrences": 8,
+    "last_used": "2026-05-21T13:13:18.004063"
+  },
+  {
+    "pattern_type": "quality_strategy",
+    "value": "medium_quality:best_laptop",
+    "avg_reward": 0.5,
+    "occurrences": 8,
+    "last_used": "2026-05-21T13:13:18.004580"
+  },
+  {
+    "pattern_type": "quality_strategy",
+    "value": "low_quality:hybrid test kw",
+    "avg_reward": 0.358,
+    "occurrences": 1,
+    "last_used": "2026-05-20T19:21:44.028833"
+  },
+  {
+    "pattern_type": "quality_strategy",
+    "value": "low_quality:best gaming laptop 2026",
+    "avg_reward": 0.285,
+    "occurrences": 1,
+    "last_used": "2026-05-21T13:13:45.060672"
+  },
+  {
+    "pattern_type": "quality_strategy",
+    "value": "low_quality:best focus timer chrome extens",
+    "avg_reward": 0.369,
+    "occurrences": 1,
+    "last_used": "2026-05-21T13:13:46.849083"
+  },
+  {
+    "pattern_type": "quality_strategy",
+    "value": "low_quality:best email marketing software",
+    "avg_reward": 0.369,
+    "occurrences": 1,
+    "last_used": "2026-05-21T13:13:48.709951"
+  },
+  {
+    "pattern_type": "quality_strategy",
+    "value": "low_quality:best protein powder for muscle",
+    "avg_reward": 0.371,
+    "occurrences": 1,
+    "last_used": "2026-05-21T13:13:50.102504"
+  },
+  {
+    "pattern_type": "quality_strategy",
+    "value": "low_quality:best vps hosting for developer",
+    "avg_reward": 0.368,
+    "occurrences": 1,
+    "last_used": "2026-05-21T13:13:52.361323"
+  }
+]

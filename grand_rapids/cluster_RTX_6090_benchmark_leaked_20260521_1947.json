@@ -1,0 +1,74 @@
+{
+  "pillar": {
+    "keyword": "RTX 6090 benchmark leaked",
+    "intent": "news",
+    "word_count": 2500,
+    "title": "RTX 6090 benchmark leaked: The Complete Guide"
+  },
+  "clusters": [
+    {
+      "keyword": "RTX 6090 benchmark leaked for beginners",
+      "type": "informational",
+      "priority": "high",
+      "estimated_volume": "medium",
+      "title": "RTX 6090 benchmark leaked for Beginners: Getting Started"
+    },
+    {
+      "keyword": "best RTX 6090 benchmark leaked options",
+      "type": "commercial",
+      "priority": "high",
+      "estimated_volume": "high",
+      "title": "Best RTX 6090 benchmark leaked Options in 2026"
+    },
+    {
+      "keyword": "RTX 6090 benchmark leaked guide",
+      "type": "informational",
+      "priority": "high",
+      "estimated_volume": "high",
+      "title": "The Complete RTX 6090 benchmark leaked Guide"
+    },
+    {
+      "keyword": "RTX 6090 benchmark leaked tips and tricks",
+      "type": "informational",
+      "priority": "medium",
+      "estimated_volume": "medium",
+      "title": "Advanced RTX 6090 benchmark leaked Tips"
+    },
+    {
+      "keyword": "RTX 6090 benchmark leaked vs alternatives",
+      "type": "commercial",
+      "priority": "medium",
+      "estimated_volume": "medium",
+      "title": "RTX 6090 benchmark leaked vs The Competition"
+    },
+    {
+      "keyword": "RTX 6090 benchmark leaked and Nvidia",
+      "type": "commercial",
+      "priority": "medium",
+      "estimated_volume": "low",
+      "title": "RTX 6090 benchmark leaked with Nvidia"
+    }
+  ],
+  "long_tail": [
+    "rtx 6090 benchmark leaked series",
+    "rtx 6090 benchmark leaked leaks",
+    "rtx 6090 benchmark leaked everywhere",
+    "rtx 6090 benchmark leaked nvidia",
+    "rtx 6090 benchmark leaked hasn&#x27;t",
+    "how to rtx 6090 benchmark leaked",
+    "why rtx 6090 benchmark leaked matters"
+  ],
+  "internal_link_map": {
+    "pillar_to_clusters": [
+      "RTX 6090 benchmark leaked for beginners",
+      "best RTX 6090 benchmark leaked options",
+      "RTX 6090 benchmark leaked guide"
+    ],
+    "cluster_to_cluster": []
+  },
+  "quick_wins": [
+    "RTX 6090 benchmark leaked basics",
+    "simple RTX 6090 benchmark leaked strategies"
+  ],
+  "authority_path": "Start with pillar, then weekly cluster articles"
+}

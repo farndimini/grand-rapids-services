@@ -1,0 +1,74 @@
+{
+  "pillar": {
+    "keyword": "best AI tools for content creation",
+    "intent": "commercial",
+    "word_count": 2500,
+    "title": "best AI tools for content creation: The Complete Guide"
+  },
+  "clusters": [
+    {
+      "keyword": "best AI tools for content creation for beginners",
+      "type": "informational",
+      "priority": "high",
+      "estimated_volume": "medium",
+      "title": "best AI tools for content creation for Beginners: Getting Started"
+    },
+    {
+      "keyword": "best best AI tools for content creation options",
+      "type": "commercial",
+      "priority": "high",
+      "estimated_volume": "high",
+      "title": "Best best AI tools for content creation Options in 2026"
+    },
+    {
+      "keyword": "best AI tools for content creation guide",
+      "type": "informational",
+      "priority": "high",
+      "estimated_volume": "high",
+      "title": "The Complete best AI tools for content creation Guide"
+    },
+    {
+      "keyword": "best AI tools for content creation tips and tricks",
+      "type": "informational",
+      "priority": "medium",
+      "estimated_volume": "medium",
+      "title": "Advanced best AI tools for content creation Tips"
+    },
+    {
+      "keyword": "best AI tools for content creation vs alternatives",
+      "type": "commercial",
+      "priority": "medium",
+      "estimated_volume": "medium",
+      "title": "best AI tools for content creation vs The Competition"
+    },
+    {
+      "keyword": "best AI tools for content creation and What",
+      "type": "commercial",
+      "priority": "medium",
+      "estimated_volume": "low",
+      "title": "best AI tools for content creation with What"
+    }
+  ],
+  "long_tail": [
+    "best ai tools for content creation platforms",
+    "best ai tools for content creation that",
+    "best ai tools for content creation actually",
+    "best ai tools for content creation work",
+    "best ai tools for content creation 2026",
+    "how to best ai tools for content creation",
+    "why best ai tools for content creation matters"
+  ],
+  "internal_link_map": {
+    "pillar_to_clusters": [
+      "best AI tools for content creation for beginners",
+      "best best AI tools for content creation options",
+      "best AI tools for content creation guide"
+    ],
+    "cluster_to_cluster": []
+  },
+  "quick_wins": [
+    "best AI tools for content creation basics",
+    "simple best AI tools for content creation strategies"
+  ],
+  "authority_path": "Start with pillar, then weekly cluster articles"
+}
