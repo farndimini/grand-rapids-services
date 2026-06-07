@@ -30,6 +30,7 @@ API_KEYS = {
     "google":     os.environ.get("GOOGLE_API_KEY",        ""),
     "deepseek":   os.environ.get("DEEPSEEK_API_KEY",      ""),
     "cloudflare": os.environ.get("CLOUDFLARE_API_TOKEN",  ""),
+    "bluesminds": os.environ.get("BLUESMINDS_API_KEY",    ""),
     "local":      "",
 }
 
@@ -76,6 +77,12 @@ MODELS = {
     "cf-mistral-7b":        ("cloudflare",  "@cf/mistral/mistral-7b-instruct-v0.1"),
     "cf-deepseek-r1-32b":   ("cloudflare",  "@cf/deepseek-ai/deepseek-r1-distill-qwen-32b"),
 
+    # ── BluesMinds (OpenAI-compatible, custom endpoint) ──────────
+    "bluesminds-gemini-3.1-pro":    ("bluesminds",  "gemini-3.1-pro"),
+    "bluesminds-gemini-3.5-flash":  ("bluesminds",  "gemini-3.5-flash"),
+    "bluesminds-gpt-4o-mini":       ("bluesminds",  "gpt-4o-mini"),
+    "bluesminds-gpt-4o":            ("bluesminds",  "gpt-4o"),
+
     # ── Local (AI Assistant, no API key needed) ─────────────────
     "local":                ("local",       "local-llm"),
 }
@@ -85,7 +92,7 @@ MODELS = {
 #  Change this to set which model runs by default
 # ──────────────────────────────────────────────────────────────
 
-DEFAULT_MODEL = "cf-llama-3.3-70b"
+DEFAULT_MODEL = "bluesminds-gemini-3.5-flash"
 
 # ──────────────────────────────────────────────────────────────
 #  GENERATION SETTINGS
@@ -101,6 +108,7 @@ SETTINGS = {
     "site_name":     os.environ.get("SITE_NAME", "James Whitfield"),
     "author_name":   os.environ.get("AUTHOR_NAME", "James Whitfield"),
     "cloudflare_account_id": os.environ.get("CLOUDFLARE_ACCOUNT_ID", ""),
+    "bluesminds_api_base": os.environ.get("BLUESMINDS_API_BASE", "https://api.bluesminds.com/v1"),
 }
 
 # ──────────────────────────────────────────────────────────────
@@ -142,6 +150,7 @@ ASYNC_CONFIG = {
         "groq": int(os.environ.get("ASYNC_LIMIT_GROQ", "6")),
         "deepseek": int(os.environ.get("ASYNC_LIMIT_DEEPSEEK", "5")),
         "cloudflare": int(os.environ.get("ASYNC_LIMIT_CLOUDFLARE", "10")),
+        "bluesminds": int(os.environ.get("ASYNC_LIMIT_BLUESMINDS", "5")),
         "google": int(os.environ.get("ASYNC_LIMIT_GOOGLE", "4")),
         "local": int(os.environ.get("ASYNC_LIMIT_LOCAL", "20")),
     },

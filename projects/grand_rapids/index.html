@@ -10,217 +10,381 @@
     <meta name="geo.placename" content="Grand Rapids">
     <meta name="geo.position" content="42.9634;-85.6681">
     <meta name="ICBM" content="42.9634, -85.6681">
-    <script type="application/ld+json">{"@context": "https://schema.org", "@type": ["HomeAndConstructionBusiness", "LocalBusiness"], "name": "Grand Rapids Home Services", "description": "Professional home services in Grand Rapids, MI since 2015. 1840+ service pages covering 23 home services across 8 cities.", "url": "https://yoursite.com", "telephone": "(616) 555-0147", "email": "hello@grandrapidshomeservices.com", "address": {"@type": "PostalAddress", "streetAddress": "1234 Plainfield Ave NE", "addressLocality": "Grand Rapids", "addressRegion": "MI", "postalCode": "49505", "addressCountry": "US"}, "geo": {"@type": "GeoCoordinates", "latitude": 42.9634, "longitude": -85.6681}, "areaServed": [{"@type": "City", "name": "Grand Rapids"}, {"@type": "City", "name": "Kentwood"}, {"@type": "City", "name": "Wyoming"}, {"@type": "City", "name": "East Grand Rapids"}, {"@type": "City", "name": "Walker"}, {"@type": "City", "name": "Ada"}, {"@type": "City", "name": "Cascade"}, {"@type": "City", "name": "Rockford"}], "foundingDate": "2015-01-01", "priceRange": "$$"}</script>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #1a202c; line-height: 1.6; }
-        .container { max-width: 1100px; margin: 0 auto; padding: 0 20px; }
-        header { background: linear-gradient(135deg, #2b6cb0, #2c5282); color: #fff; padding: 48px 0; text-align: center; }
-        header h1 { font-size: 2.2em; margin-bottom: 8px; }
-        header p { font-size: 1.1em; opacity: 0.9; }
-        .cta-banner { background: #edf2f7; text-align: center; padding: 32px 0; border-bottom: 3px solid #2b6cb0; }
-        .cta-banner h2 { color: #2b6cb0; }
-        .cta-banner a { color: #2b6cb0; font-size: 1.6em; font-weight: bold; text-decoration: none; }
-        .cta-banner a:hover { text-decoration: underline; }
-        section { padding: 40px 0; }
-        section:nth-child(even) { background: #f7fafc; }
-        h2 { font-size: 1.5em; margin-bottom: 20px; color: #2d3748; }
-        .card { background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin-bottom: 16px; }
-        .card h3 { color: #2b6cb0; margin-bottom: 8px; font-size: 1.1em; }
-        .svc-link { color: #4a5568; text-decoration: none; }
-        .svc-link:hover { color: #2b6cb0; text-decoration: underline; }
-        .city-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; }
-        .city-card { display: block; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; text-align: center; color: #2d3748; text-decoration: none; font-weight: 500; }
-        .city-card:hover { border-color: #2b6cb0; color: #2b6cb0; }
-        .mod-badge { display: inline-block; background: #ebf8ff; color: #2b6cb0; border: 1px solid #bee3f8; border-radius: 20px; padding: 6px 16px; margin: 4px; text-decoration: none; font-size: 0.9em; }
-        .mod-badge:hover { background: #2b6cb0; color: #fff; }
-        .review-card { background: #fff; border-left: 4px solid #2b6cb0; padding: 16px; margin-bottom: 12px; border-radius: 0 8px 8px 0; }
-        .review-meta { font-size: 0.85em; color: #718096; margin-top: 8px; }
-        .stars { color: #e6a817; }
-        .stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 16px; text-align: center; }
-        .stat { background: #fff; padding: 24px; border-radius: 8px; border: 1px solid #e2e8f0; }
-        .stat-num { font-size: 2em; font-weight: bold; color: #2b6cb0; }
-        .stat-label { font-size: 0.85em; color: #718096; }
-        footer { background: #2d3748; color: #a0aec0; text-align: center; padding: 32px 0; font-size: 0.9em; }
-        footer a { color: #bee3f8; text-decoration: none; }
-        footer a:hover { text-decoration: underline; }
-        .auth-links { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; padding: 12px 0; }
-        .auth-links a { color: #fff; text-decoration: none; padding: 4px 12px; border: 1px solid rgba(255,255,255,0.3); border-radius: 4px; font-size: 0.9em; }
-        .auth-links a:hover { background: rgba(255,255,255,0.1); }
-        @media (max-width: 600px) { header h1 { font-size: 1.6em; } .city-grid { grid-template-columns: repeat(2, 1fr); } }
-    </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/assets/style.css">
+    <script type="application/ld+json">{"@context": "https://schema.org", "@type": ["HomeAndConstructionBusiness", "LocalBusiness"], "name": "Grand Rapids Home Services", "description": "Professional home services in Grand Rapids, MI since 2015. 1840+ service pages covering 23 home services across 8 cities.", "url": "/", "telephone": "(616) 555-0147", "email": "hello@grandrapidshomeservices.com", "address": {"@type": "PostalAddress", "streetAddress": "1234 Plainfield Ave NE", "addressLocality": "Grand Rapids", "addressRegion": "MI", "postalCode": "49505", "addressCountry": "US"}, "geo": {"@type": "GeoCoordinates", "latitude": 42.9634, "longitude": -85.6681}, "areaServed": [{"@type": "City", "name": "Grand Rapids"}, {"@type": "City", "name": "Kentwood"}, {"@type": "City", "name": "Wyoming"}, {"@type": "City", "name": "East Grand Rapids"}, {"@type": "City", "name": "Walker"}, {"@type": "City", "name": "Ada"}, {"@type": "City", "name": "Cascade"}, {"@type": "City", "name": "Rockford"}], "foundingDate": "2015-01-01", "priceRange": "$$"}</script>
 </head>
 <body>
 
-<header>
-    <div class="container">
-        <h1>Grand Rapids Home Services</h1>
-        <p>Licensed & Insured Home Services in Grand Rapids, MI — Since 2015</p>
-        <div class="auth-links">
-            <a href="/about-us">About</a>
-            <a href="/service-areas">Service Areas</a>
-            <a href="/contact">Contact</a>
-            <a href="/reviews-grand-rapids">Reviews</a>
-            <a href="/financing">Financing</a>
-            <a href="/warranties">Warranties</a>
-            <a href="/emergency-service">Emergency</a>
+<!-- Navbar -->
+<nav class="navbar">
+    <div class="navbar-inner">
+        <a href="/" class="navbar-logo">
+            <div class="navbar-logo-icon">GR</div>
+            <span>Grand Rapids</span> Home Services
+        </a>
+        <ul class="nav-links">
+            <li><a href="/">Home</a></li>
+            <li><a href="/blog">Blog</a></li>
+            <li><a href="/hubs/appliance-repair-grand-rapids">Services</a></li>
+            <li><a href="/authority/service-areas">Service Areas</a></li>
+            <li><a href="/authority/about-us">About</a></li>
+            <li><a href="/authority/reviews-grand-rapids">Reviews</a></li>
+            <li><a href="/authority/contact" class="nav-cta">Call Now</a></li>
+        </ul>
+        <button class="hamburger" aria-label="Menu">
+            <span></span><span></span><span></span>
+        </button>
+    </div>
+</nav>
+
+<!-- Hero Slider -->
+<div class="hero-slider">
+    <div class="hero-slide active">
+        <div class="hero-slide-bg" style="background:linear-gradient(135deg, #1e3a5f, #1a56db);"></div>
+        <div class="container" style="position:relative;z-index:2;flex:1;">
+            <div class="hero-content animate-fade-up">
+                <div class="hero-badge">Licensed &amp; Insured Since 2015</div>
+                <h1>Professional Home Services<br><span>in Grand Rapids, MI</span></h1>
+                <p>From appliance repair to roofing, plumbing to painting — we connect you with licensed, background-checked professionals across all of West Michigan. Same-day service available.</p>
+                <div class="hero-buttons">
+                    <a href="tel:+16165550147" class="btn btn-accent btn-lg">(616) 555-0147</a>
+                    <a href="/hubs/appliance-repair-grand-rapids" class="btn btn-outline btn-lg">View All Services</a>
+                </div>
+            </div>
         </div>
     </div>
-</header>
-
-<div class="cta-banner">
-    <div class="container">
-        <h2>Need Service? We're Available 24/7</h2>
-        <p><a href="tel:+16165550147">(616) 555-0147</a></p>
-        <p>Free Estimates · Licensed Technicians · Same-Day Service</p>
+    <div class="hero-slide">
+        <div class="hero-slide-bg" style="background:linear-gradient(135deg, #065f46, #059669);"></div>
+        <div class="container" style="position:relative;z-index:2;flex:1;">
+            <div class="hero-content animate-fade-up">
+                <div class="hero-badge">24/7 Emergency Service</div>
+                <h1>Emergency Repairs<br><span>Available Around the Clock</span></h1>
+                <p>Water damage, electrical failures, broken HVAC, garage door emergencies — our team responds 24/7 with no overtime charges for nights, weekends, or holidays.</p>
+                <div class="hero-buttons">
+                    <a href="tel:+16165550147" class="btn btn-accent btn-lg">Call Emergency Line</a>
+                    <a href="/authority/emergency-service" class="btn btn-outline btn-lg">Learn More</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="hero-slide">
+        <div class="hero-slide-bg" style="background:linear-gradient(135deg, #7c2d12, #c2410c);"></div>
+        <div class="container" style="position:relative;z-index:2;flex:1;">
+            <div class="hero-content animate-fade-up">
+                <div class="hero-badge">Free Estimates</div>
+                <h1>Affordable Home Services<br><span>Free Estimates &amp; Transparent Pricing</span></h1>
+                <p>We believe in upfront pricing. Get a free, no-obligation estimate before any work begins. Serving Grand Rapids, Kentwood, Wyoming, East Grand Rapids, Ada, Cascade, Rockford, and Walker.</p>
+                <div class="hero-buttons">
+                    <a href="tel:+16165550147" class="btn btn-accent btn-lg">Get Free Estimate</a>
+                    <a href="/authority/financing" class="btn btn-outline btn-lg">Financing Options</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    <button class="slider-arrow prev">&#10094;</button>
+    <button class="slider-arrow next">&#10095;</button>
+    <div class="slider-dots">
+        <button class="slider-dot active" aria-label="Slide 1"></button>
+        <button class="slider-dot" aria-label="Slide 2"></button>
+        <button class="slider-dot" aria-label="Slide 3"></button>
     </div>
 </div>
 
-<section>
+<!-- Trust Bar -->
+<div class="trust-bar">
+    <div class="trust-bar-inner">
+        <div class="trust-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+            Licensed &amp; Insured
+        </div>
+        <div class="trust-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            Same-Day Service
+        </div>
+        <div class="trust-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 13l4 4L19 7"/></svg>
+            Free Estimates
+        </div>
+        <div class="trust-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+            23 Services Offered
+        </div>
+        <div class="trust-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+            8 Cities Served
+        </div>
+    </div>
+</div>
+
+<!-- Services Section -->
+<section class="section">
     <div class="container">
-        <h2>Our Services</h2>
-        <p>We provide 23 professional home services across all of West Michigan. Each service has detailed pages with pricing, FAQs, and local information.</p>
-        
-        <div class="card">
-            <h3>Concrete & Masonry</h3>
-            <p><a href="/concrete-services-grand-rapids" class="svc-link">Concrete</a></p>
+        <div class="section-header reveal">
+            <span class="section-tag">Our Services</span>
+            <h2>Professional Home Services <span>in West Michigan</span></h2>
+            <p>We provide 23 professional home services across all of Grand Rapids and surrounding cities. Each service includes detailed local pages with pricing, FAQs, and neighborhood information.</p>
         </div>
-        <div class="card">
-            <h3>Electrical Services</h3>
-            <p><a href="/electrical-services-grand-rapids" class="svc-link">Electrical</a></p>
-        </div>
-        <div class="card">
-            <h3>Exterior Services</h3>
-            <p><a href="/roofing-services-grand-rapids" class="svc-link">Roofing</a> · <a href="/siding-services-grand-rapids" class="svc-link">Siding</a> · <a href="/window-replacement-grand-rapids" class="svc-link">Window Replacement</a></p>
-        </div>
-        <div class="card">
-            <h3>Fencing & Gates</h3>
-            <p><a href="/fencing-services-grand-rapids" class="svc-link">Fencing</a></p>
-        </div>
-        <div class="card">
-            <h3>Flooring & Surfaces</h3>
-            <p><a href="/flooring-services-grand-rapids" class="svc-link">Flooring</a></p>
-        </div>
-        <div class="card">
-            <h3>Garage Door Services</h3>
-            <p><a href="/garage-door-services-grand-rapids" class="svc-link">Garage Door Repair</a> · <a href="/garage-door-services-grand-rapids" class="svc-link">Garage Door Installation</a></p>
-        </div>
-        <div class="card">
-            <h3>Heating & Cooling</h3>
-            <p><a href="/hvac-services-grand-rapids" class="svc-link">Hvac</a></p>
-        </div>
-        <div class="card">
-            <h3>Home Appliance Services</h3>
-            <p><a href="/appliance-repair-grand-rapids" class="svc-link">Appliance Repair</a></p>
-        </div>
-        <div class="card">
-            <h3>Home Remodeling</h3>
-            <p><a href="/basement-remodeling-grand-rapids" class="svc-link">Basement Remodel</a> · <a href="/bathroom-remodeling-grand-rapids" class="svc-link">Shower Remodel</a> · <a href="/kitchen-remodeling-grand-rapids" class="svc-link">Kitchen Remodeling</a> · <a href="/bathroom-remodeling-grand-rapids" class="svc-link">Bathroom Remodeling</a></p>
-        </div>
-        <div class="card">
-            <h3>Outdoor Living</h3>
-            <p><a href="/deck-patio-services-grand-rapids" class="svc-link">Deck And Patio</a> · <a href="/landscaping-services-grand-rapids" class="svc-link">Landscaping</a></p>
-        </div>
-        <div class="card">
-            <h3>Painting & Finishing</h3>
-            <p><a href="/painting-services-grand-rapids" class="svc-link">Painting</a></p>
-        </div>
-        <div class="card">
-            <h3>Pest Management</h3>
-            <p><a href="/pest-control-grand-rapids" class="svc-link">Pest Control</a></p>
-        </div>
-        <div class="card">
-            <h3>Plumbing & Water Services</h3>
-            <p><a href="/plumbing-services-grand-rapids" class="svc-link">Plumbing</a> · <a href="/water-damage-restoration-grand-rapids" class="svc-link">Water Damage Restoration</a></p>
-        </div>
-        <div class="card">
-            <h3>Restoration Services</h3>
-            <p><a href="/water-damage-restoration-grand-rapids" class="svc-link">Water Damage Restoration</a> · <a href="/mold-remediation-grand-rapids" class="svc-link">Mold Remediation</a></p>
-        </div>
-        <div class="card">
-            <h3>Tree Care & Removal</h3>
-            <p><a href="/tree-services-grand-rapids" class="svc-link">Tree Service</a></p>
+        <div class="services-grid">
+            <a href="/hubs/appliance-repair-grand-rapids" class="service-card reveal reveal-delay-1">
+                <div class="service-card-icon">&#9881;</div>
+                <h3>Appliance Repair</h3>
+                <p>Refrigerator, dishwasher, oven, washer, dryer repair — all brands. Same-day service available.</p>
+                <span class="service-link">View Services &rarr;</span>
+            </a>
+            <a href="/hubs/plumbing-grand-rapids" class="service-card reveal reveal-delay-2">
+                <div class="service-card-icon">&#9742;</div>
+                <h3>Plumbing</h3>
+                <p>Pipe repair, drain cleaning, water heater installation, leak detection, and emergency plumbing.</p>
+                <span class="service-link">View Services &rarr;</span>
+            </a>
+            <a href="/hubs/hvac-grand-rapids" class="service-card reveal reveal-delay-3">
+                <div class="service-card-icon">&#9722;</div>
+                <h3>HVAC Services</h3>
+                <p>Furnace repair, AC installation, duct cleaning, thermostat replacement, and emergency HVAC.</p>
+                <span class="service-link">View Services &rarr;</span>
+            </a>
+            <a href="/hubs/electrical-grand-rapids" class="service-card reveal reveal-delay-1">
+                <div class="service-card-icon">&#9889;</div>
+                <h3>Electrical Services</h3>
+                <p>Wiring, panel upgrades, outlet installation, lighting, generator repair, and emergency electrical.</p>
+                <span class="service-link">View Services &rarr;</span>
+            </a>
+            <a href="/hubs/roofing-grand-rapids" class="service-card reveal reveal-delay-2">
+                <div class="service-card-icon">&#8962;</div>
+                <h3>Roofing</h3>
+                <p>Shingle repair, flat roof, gutter installation, skylight repair, and storm damage restoration.</p>
+                <span class="service-link">View Services &rarr;</span>
+            </a>
+            <a href="/hubs/basement-remodeling-grand-rapids" class="service-card reveal reveal-delay-3">
+                <div class="service-card-icon">&#127968;</div>
+                <h3>Basement Remodeling</h3>
+                <p>Full basement finishing, waterproofing, egress windows, and basement bathroom installation.</p>
+                <span class="service-link">View Services &rarr;</span>
+            </a>
+            <a href="/hubs/bathroom-remodeling-grand-rapids" class="service-card reveal reveal-delay-1">
+                <div class="service-card-icon">&#128703;</div>
+                <h3>Bathroom Remodeling</h3>
+                <p>Shower remodel, tub replacement, vanity installation, tile work, and full bathroom renovation.</p>
+                <span class="service-link">View Services &rarr;</span>
+            </a>
+            <a href="/hubs/painting-grand-rapids" class="service-card reveal reveal-delay-2">
+                <div class="service-card-icon">&#127912;</div>
+                <h3>Painting Services</h3>
+                <p>Interior painting, exterior painting, cabinet refinishing, commercial painting, and epoxy floors.</p>
+                <span class="service-link">View Services &rarr;</span>
+            </a>
+            <a href="/hubs/garage-door-services-grand-rapids" class="service-card reveal reveal-delay-3">
+                <div class="service-card-icon">&#128666;</div>
+                <h3>Garage Door Services</h3>
+                <p>Garage door repair, opener installation, spring replacement, and new garage door installation.</p>
+                <span class="service-link">View Services &rarr;</span>
+            </a>
+            <a href="/hubs/landscaping-grand-rapids" class="service-card reveal reveal-delay-1">
+                <div class="service-card-icon">&#127793;</div>
+                <h3>Landscaping</h3>
+                <p>Lawn care, hardscaping, retaining walls, paver patios, sod installation, and drainage solutions.</p>
+                <span class="service-link">View Services &rarr;</span>
+            </a>
+            <a href="/hubs/water-damage-restoration-grand-rapids" class="service-card reveal reveal-delay-2">
+                <div class="service-card-icon">&#128167;</div>
+                <h3>Water Damage Restoration</h3>
+                <p>Flood cleanup, mold remediation, water extraction, drying services, and structural repair.</p>
+                <span class="service-link">View Services &rarr;</span>
+            </a>
+            <a href="/hubs/tree-service-grand-rapids" class="service-card reveal reveal-delay-3">
+                <div class="service-card-icon">&#127795;</div>
+                <h3>Tree Service</h3>
+                <p>Tree removal, stump grinding, pruning, emergency storm cleanup, and lot clearing.</p>
+                <span class="service-link">View Services &rarr;</span>
+            </a>
+            <a href="/hubs/fencing-grand-rapids" class="service-card reveal reveal-delay-1">
+                <div class="service-card-icon">&#128719;</div>
+                <h3>Fencing</h3>
+                <p>Wood fence, vinyl fence, chain link, privacy fence, gate installation, and fence repair.</p>
+                <span class="service-link">View Services &rarr;</span>
+            </a>
+            <a href="/hubs/kitchen-remodeling-grand-rapids" class="service-card reveal reveal-delay-2">
+                <div class="service-card-icon">&#127858;</div>
+                <h3>Kitchen Remodeling</h3>
+                <p>Cabinet installation, countertop replacement, backsplash, kitchen island design and renovation.</p>
+                <span class="service-link">View Services &rarr;</span>
+            </a>
+            <a href="/hubs/concrete-grand-rapids" class="service-card reveal reveal-delay-3">
+                <div class="service-card-icon">&#128679;</div>
+                <h3>Concrete Services</h3>
+                <p>Driveway installation, patio concrete, foundation repair, stamped concrete, and walkways.</p>
+                <span class="service-link">View Services &rarr;</span>
+            </a>
+            <a href="/hubs/flooring-grand-rapids" class="service-card reveal reveal-delay-1">
+                <div class="service-card-icon">&#128725;</div>
+                <h3>Flooring Services</h3>
+                <p>Hardwood installation, laminate, tile, vinyl plank, carpet, and floor refinishing services.</p>
+                <span class="service-link">View Services &rarr;</span>
+            </a>
+            <a href="/hubs/pest-control-grand-rapids" class="service-card reveal reveal-delay-2">
+                <div class="service-card-icon">&#128027;</div>
+                <h3>Pest Control</h3>
+                <p>Termite treatment, rodent removal, insect control, bed bug extermination, and wildlife removal.</p>
+                <span class="service-link">View Services &rarr;</span>
+            </a>
+            <a href="/hubs/mold-remediation-grand-rapids" class="service-card reveal reveal-delay-3">
+                <div class="service-card-icon">&#9762;</div>
+                <h3>Mold Remediation</h3>
+                <p>Mold inspection, air quality testing, black mold removal, attic mold, and crawl space remediation.</p>
+                <span class="service-link">View Services &rarr;</span>
+            </a>
+            <a href="/hubs/siding-grand-rapids" class="service-card reveal reveal-delay-1">
+                <div class="service-card-icon">&#127970;</div>
+                <h3>Siding Services</h3>
+                <p>Vinyl siding, James Hardie, cedar shake, siding repair, soffit and fascia installation.</p>
+                <span class="service-link">View Services &rarr;</span>
+            </a>
+            <a href="/hubs/deck-and-patio-grand-rapids" class="service-card reveal reveal-delay-2">
+                <div class="service-card-icon">&#127749;</div>
+                <h3>Deck &amp; Patio</h3>
+                <p>Deck building, composite decking, patio installation, pergola construction, and deck staining.</p>
+                <span class="service-link">View Services &rarr;</span>
+            </a>
+            <a href="/hubs/window-replacement-grand-rapids" class="service-card reveal reveal-delay-3">
+                <div class="service-card-icon">&#128522;</div>
+                <h3>Window Replacement</h3>
+                <p>Window installation, double-pane replacement, bay windows, storm windows, and glass repair.</p>
+                <span class="service-link">View Services &rarr;</span>
+            </a>
+            <a href="/hubs/shower-remodel-grand-rapids" class="service-card reveal reveal-delay-1">
+                <div class="service-card-icon">&#128703;</div>
+                <h3>Shower Remodel</h3>
+                <p>Walk-in shower, tub-to-shower conversion, tile shower, glass enclosure, and accessibility upgrades.</p>
+                <span class="service-link">View Services &rarr;</span>
+            </a>
         </div>
     </div>
 </section>
 
-<section>
+<!-- Service Modifiers -->
+<section class="section section-alt">
     <div class="container">
-        <h2>Service Modifiers</h2>
-        <p>Find the right service for your needs — every service is available in these formats:</p>
+        <div class="section-header reveal">
+            <span class="section-tag">Service Options</span>
+            <h2>Every Service Available <span>in Multiple Formats</span></h2>
+            <p>All 23 services are available in every format below — browse the format that fits your needs.</p>
+        </div>
         <div style="text-align:center;">
-            <a href="/emergency-appliance-repair-grand-rapids/" class="mod-badge">Emergency</a><a href="/same-day-appliance-repair-grand-rapids/" class="mod-badge">Same-Day</a><a href="/affordable-appliance-repair-grand-rapids/" class="mod-badge">Affordable</a><a href="/near-me-appliance-repair-grand-rapids/" class="mod-badge">Near Me</a><a href="/24-hour-appliance-repair-grand-rapids/" class="mod-badge">24 Hour</a><a href="/licensed-appliance-repair-grand-rapids/" class="mod-badge">Licensed</a><a href="/commercial-appliance-repair-grand-rapids/" class="mod-badge">Commercial</a><a href="/top-rated-appliance-repair-grand-rapids/" class="mod-badge">Top-Rated</a><a href="/free-estimate-appliance-repair-grand-rapids/" class="mod-badge">Free Estimate</a><a href="/family-owned-appliance-repair-grand-rapids/" class="mod-badge">Family-Owned</a>
-        </div>
-        <p style="margin-top:12px;font-size:0.9em;color:#718096;">Each modifier × service × city combination has a unique, locally-optimized page with neighborhood info, FAQ, and pricing.</p>
-    </div>
-</section>
-
-<section>
-    <div class="container">
-        <h2>Cities We Serve</h2>
-        <p>Click a city to see all services available in your area.</p>
-        <div class="city-grid">
-            
-        <a href="/grand-rapids" class="city-card">Grand Rapids</a>
-        <a href="/kentwood" class="city-card">Kentwood</a>
-        <a href="/wyoming-mi" class="city-card">Wyoming</a>
-        <a href="/east-grand-rapids" class="city-card">East Grand Rapids</a>
-        <a href="/walker-mi" class="city-card">Walker</a>
-        <a href="/ada-mi" class="city-card">Ada</a>
-        <a href="/cascade-mi" class="city-card">Cascade</a>
-        <a href="/rockford-mi" class="city-card">Rockford</a>
+            <a href="/hubs/appliance-repair-grand-rapids" class="mod-badge">Emergency</a>
+            <a href="/hubs/appliance-repair-grand-rapids" class="mod-badge">Same-Day</a>
+            <a href="/hubs/appliance-repair-grand-rapids" class="mod-badge">24 Hour</a>
+            <a href="/hubs/appliance-repair-grand-rapids" class="mod-badge">Affordable</a>
+            <a href="/hubs/appliance-repair-grand-rapids" class="mod-badge">Near Me</a>
+            <a href="/hubs/appliance-repair-grand-rapids" class="mod-badge">Licensed</a>
+            <a href="/hubs/appliance-repair-grand-rapids" class="mod-badge">Commercial</a>
+            <a href="/hubs/appliance-repair-grand-rapids" class="mod-badge">Top-Rated</a>
+            <a href="/hubs/appliance-repair-grand-rapids" class="mod-badge">Free Estimate</a>
+            <a href="/hubs/appliance-repair-grand-rapids" class="mod-badge">Family-Owned</a>
         </div>
     </div>
 </section>
 
-<section>
+<!-- Stats -->
+<section class="section">
     <div class="container">
-        <h2>By the Numbers</h2>
-        <div class="stats">
-            <div class="stat"><div class="stat-num">23</div><div class="stat-label">Services</div></div>
-            <div class="stat"><div class="stat-num">8</div><div class="stat-label">Cities</div></div>
-            <div class="stat"><div class="stat-num">10</div><div class="stat-label">Modifiers</div></div>
-            <div class="stat"><div class="stat-num">2261</div><div class="stat-label">Total Pages</div></div>
+        <div class="section-header reveal">
+            <span class="section-tag">By the Numbers</span>
+            <h2>Grand Rapids Home Services <span>in Numbers</span></h2>
+        </div>
+        <div class="stats-grid">
+            <div class="stat-card reveal reveal-delay-1"><div class="stat-num">23</div><div class="stat-label">Professional Services</div></div>
+            <div class="stat-card reveal reveal-delay-2"><div class="stat-num">8</div><div class="stat-label">Cities Served</div></div>
+            <div class="stat-card reveal reveal-delay-3"><div class="stat-num">10</div><div class="stat-label">Service Formats</div></div>
+            <div class="stat-card reveal reveal-delay-4"><div class="stat-num">2261</div><div class="stat-label">Total Service Pages</div></div>
         </div>
     </div>
 </section>
 
-<section>
+<!-- Reviews -->
+<section class="section section-alt">
     <div class="container">
-        <h2>What Our Customers Say</h2>
-        
-        <div class="review-card">
+        <div class="section-header reveal">
+            <span class="section-tag">Customer Reviews</span>
+            <h2>What Our Customers <span>Say About Us</span></h2>
+        </div>
+        <div class="review-card reveal reveal-delay-1">
             <p>"Technician arrived within 40 minutes on a Saturday. Fixed our refrigerator compressor in under an hour. Fair price, no upselling."</p>
             <p class="review-meta">— Mark T., East Grand Rapids <span class="stars">★★★★★</span></p>
         </div>
-        <div class="review-card">
+        <div class="review-card reveal reveal-delay-2">
             <p>"Dishwasher stopped draining. Called in the morning, they came by afternoon. Replaced the pump and it's been running perfectly since."</p>
             <p class="review-meta">— Sarah K., Kentwood <span class="stars">★★★★★</span></p>
         </div>
-        <div class="review-card">
+        <div class="review-card reveal reveal-delay-3">
             <p>"Dryer was making a loud noise. Tech diagnosed it as a worn drum bearing. Quote was reasonable and repair took about 90 minutes."</p>
             <p class="review-meta">— David R., Wyoming <span class="stars">★★★★☆</span></p>
         </div>
-        <p style="margin-top:12px;"><a href="/reviews-grand-rapids">Read all 16 reviews →</a></p>
+        <div style="text-align:center;margin-top:24px;">
+            <a href="/authority/reviews-grand-rapids" class="btn btn-primary">Read All Reviews →</a>
+        </div>
     </div>
 </section>
 
-<section>
+<!-- Emergency CTA -->
+<section class="emergency-cta">
     <div class="container">
-        <h2>Emergency Service Available 24/7</h2>
-        <p>For urgent plumbing, HVAC, electrical, water damage, or garage door emergencies, our team is on standby around the clock. No overtime charges for nights, weekends, or holidays.</p>
-        <p style="text-align:center;margin-top:16px;"><a href="/emergency-service" style="background:#e53e3e;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;display:inline-block;font-weight:bold;">24/7 Emergency Service — Call (616) 555-0147</a></p>
+        <div class="reveal">
+            <h2>24/7 Emergency Service Available</h2>
+            <p>For urgent plumbing, HVAC, electrical, water damage, or garage door emergencies — we're here around the clock. No overtime charges for nights, weekends, or holidays.</p>
+            <a href="tel:+16165550147" class="btn btn-lg">(616) 555-0147 — Call Now</a>
+        </div>
     </div>
 </section>
 
-<footer>
+<!-- Footer -->
+<footer class="footer">
     <div class="container">
-        <p><strong>Grand Rapids Home Services</strong> · 1234 Plainfield Ave NE, Grand Rapids, MI 49505</p>
-        <p>Phone: <a href="tel:+16165550147">(616) 555-0147</a> · Email: hello@grandrapidshomeservices.com</p>
-        <p>Hours: Mon-Fri 7:00 AM - 7:00 PM · Sat 8:00 AM - 5:00 PM · Emergency 24/7</p>
-        <p style="margin-top:8px;font-size:0.85em;">&copy; 2015–2026 Grand Rapids Home Services. All rights reserved. | <a href="/sitemap/sitemap-index.xml">Sitemap</a></p>
+        <div class="footer-grid">
+            <div>
+                <a href="/" class="footer-brand">Grand Rapids Home Services</a>
+                <p style="line-height:1.6;">1234 Plainfield Ave NE<br>Grand Rapids, MI 49505</p>
+                <p style="margin-top:12px;">Phone: <a href="tel:+16165550147">(616) 555-0147</a></p>
+                <p>Email: hello@grandrapidshomeservices.com</p>
+            </div>
+            <div>
+                <h4>Services</h4>
+                <a href="/hubs/plumbing-grand-rapids">Plumbing</a>
+                <a href="/hubs/hvac-grand-rapids">HVAC</a>
+                <a href="/hubs/electrical-grand-rapids">Electrical</a>
+                <a href="/hubs/roofing-grand-rapids">Roofing</a>
+                <a href="/hubs/appliance-repair-grand-rapids">Appliance Repair</a>
+                <a href="/hubs/painting-grand-rapids">Painting</a>
+            </div>
+            <div>
+                <h4>Company</h4>
+                <a href="/authority/about-us">About Us</a>
+                <a href="/authority/contact">Contact</a>
+                <a href="/authority/service-areas">Service Areas</a>
+                <a href="/authority/reviews-grand-rapids">Reviews</a>
+                <a href="/authority/financing">Financing</a>
+                <a href="/authority/warranties">Warranties</a>
+            </div>
+            <div>
+                <h4>Support</h4>
+                <a href="/blog">Blog</a>
+                <a href="/authority/emergency-service">Emergency Service</a>
+                <a href="/authority/contact">Get a Quote</a>
+                <a href="/sitemap/sitemap-index.xml">Sitemap</a>
+                <a href="/authority/about-us">Privacy Policy</a>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            &copy; 2015–2026 Grand Rapids Home Services. All rights reserved.
+        </div>
     </div>
 </footer>
 
+<!-- Back to Top -->
+<button class="back-to-top" aria-label="Back to top">&#8593;</button>
+
+<script src="/assets/script.js"></script>
 </body>
 </html>

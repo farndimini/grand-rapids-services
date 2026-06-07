@@ -1,19 +1,19 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <sitemap>
-    <loc>https://yoursite.com/sitemap/sitemap-authority.xml</loc>
+    <loc>/sitemap/sitemap-authority.xml</loc>
     <lastmod>2026-05-23</lastmod>
   </sitemap>
   <sitemap>
-    <loc>https://yoursite.com/sitemap/sitemap-emergency.xml</loc>
+    <loc>/sitemap/sitemap-emergency.xml</loc>
     <lastmod>2026-05-23</lastmod>
   </sitemap>
   <sitemap>
-    <loc>https://yoursite.com/sitemap/sitemap-hubs.xml</loc>
+    <loc>/sitemap/sitemap-hubs.xml</loc>
     <lastmod>2026-05-23</lastmod>
   </sitemap>
   <sitemap>
-    <loc>https://yoursite.com/sitemap/sitemap-neighborhoods.xml</loc>
+    <loc>/sitemap/sitemap-neighborhoods.xml</loc>
     <lastmod>2026-05-23</lastmod>
   </sitemap>
 </sitemapindex>

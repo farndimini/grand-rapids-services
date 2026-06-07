@@ -142,3 +142,106 @@ Applied after every article generation via `fix_article()`:
 - Tests pass when: all assertions pass, `ALL TESTS PASSED` printed
 - **Test mode**: Set `SEO_AGENT_TEST_MODE=1` env var to skip real module network calls.
   All test files do this automatically. Remove it to test with live SERP/LLM calls.
+
+# ════════════════════════════════════════
+# GRAND RAPIDS HOME SERVICES — SITE PROJECT
+# ════════════════════════════════════════
+
+## Project location
+- Root: `projects/grand_rapids/`
+- Generator script: `generate_articles.py` (root of repo, NOT inside project)
+- Dev server: `http://localhost:3000`
+
+## Site structure
+- `/` — Home page with navbar + footer (Blog link added)
+- `/blog.html` — Blog landing page (21 service category cards)
+- `/hubs/{cat}-grand-rapids.html` — 21 hub pages (one per service)
+- `/authority/` — About, Contact, Service Areas, Reviews, Financing, Warranty
+- `/{directory}/{file}.html` — 1,311 article files across 6 directories
+
+## The 21 Services (in `generate_articles.py` SERVICES dict)
+Keys must match filename substrings for `detect_service()`. `cat` field matches the hub filename (without `-grand-rapids.html`).
+
+| Key | Name (display) | cat (hub path) | Naming in filenames |
+|-----|---------------|----------------|-------------------|
+| plumbing | Plumbing | plumbing | plumbing |
+| hvac | HVAC | hvac | hvac |
+| electrical | Electrical | electrical | electrical |
+| roofing | Roofing | roofing | roofing |
+| landscaping | Landscaping | landscaping | landscaping |
+| concrete | Concrete | concrete | concrete |
+| fencing | Fencing | fencing | fencing |
+| flooring | Flooring | flooring | flooring |
+| painting | Painting | painting | painting |
+| pest-control | Pest Control | pest-control | pest-control |
+| siding | Siding | siding | siding |
+| window-replacement | Window Replacement | window-replacement | window-replacement |
+| deck-and-patio | Deck & Patio | deck-and-patio | deck-and-patio |
+| kitchen-remodeling | Kitchen Remodeling | kitchen-remodeling | kitchen-remodeling |
+| bathroom-remodeling | Bathroom Remodeling | bathroom-remodeling | bathroom-remodeling, shower-remodel |
+| basement-remodel | Basement Remodeling | basement-remodeling | basement-remodel, basement-remodeling |
+| garage-door | Garage Door | garage-door-services | garage-door-installation, garage-door-repair |
+| tree-service | Tree Service | tree-service | tree-service |
+| mold-remediation | Mold Remediation | mold-remediation | mold-remediation |
+| water-damage-restoration | Water Damage Restoration | water-damage-restoration | water-damage-restoration |
+| appliance-repair | Appliance Repair | appliance-repair | appliance-repair |
+
+## Directory structure (6 directories, 1,311 files total)
+| Directory | Files | Prefix | Geo-targets |
+|-----------|-------|--------|-------------|
+| `emergency/` | 184 | `emergency-{service}-{city}-mi.html` | 8 cities |
+| `24_hour/` | 184 | `24-hour-{service}-{city}-mi.html` | 8 cities |
+| `same_day/` | 184 | `same-day-{service}-{city}-mi.html` | 8 cities |
+| `affordable/` | 184 | `affordable-{service}-{city}-mi.html` | 8 cities |
+| `near_me/` | 184 | `near-me-{service}-{city}-mi.html` | 8 cities |
+| `neighborhoods/` | 391 | `{service}-{neighborhood}-grand-rapids.html` (no prefix!) | 17 neighborhoods |
+
+8 cities: grand-rapids, kentwood, wyoming, east-grand-rapids, walker, ada, cascade, rockford, jenison, hudsonville
+
+## Article template rules (must follow for ALL generators)
+- **Angi.com-style structure**: pricing tables, comparison tables, cost-saving tips, transparent data sources, additional repair costs
+- **8 tables minimum**: Pricing, Emergency vs Standard, When You Need, Service Areas (10-city response), Emergency Checklist, Response Process, Additional Costs, Ways to Save
+- **3 JSON-LD schemas**: Article, LocalBusiness, FAQPage (8 questions)
+- **EEAT author**: Mike Vanderholt, license #MP-45728, 19+ years, 4,200+ calls
+- **11+ external links**: LARA, EPA WaterSense, Angi, City of GR plus service-specific .gov/.org
+- **No fabricated experience**: never claim "I tested" / "hands-on"
+- **No hallucinated specs**: uncertain claims use `[VERIFY]`
+- **Table of Contents**: professional card design — dark gradient header, numbered items with blue badge squares, responsive CSS grid, hover effects
+- **`.section` padding removed**: no 80px top/bottom gap between hero image and TOC
+- **Hero image**: max-width 800px centered (NOT full 1152px width)
+
+## Image generation (`generate_image()`)
+- Format: 1200×630 WebP (Google-preferred for Article rich results)
+- Background: dark gradient (#0f0f0a → #1a1a2e), NOT blue (#1e293b rejected)
+- Accent: indigo #3b5af6 for badge, stats, accent lines
+- Elements: service badge pill tag, title, subtitle, 3 stats (4,200+ Calls, 19+ Yrs, 10 Cities)
+- Diagonal line texture every 40px
+- File path: `/assets/images/{dir_prefix}-{service_key}-{city_key}.webp`
+- For neighborhoods (no dir_prefix): `/assets/images/{service_key}-{city_key}.webp`
+
+## `detect_service()` rules
+- `sk in name` check (substring match)
+- Special aliases checked FIRST:
+  - `"shower" in name` → `"bathroom-remodeling"`
+- If no match, fallback: `"plumbing"`
+
+## `detect_city()` rules
+- Check longer city names FIRST (sorted by len, reverse) to prevent "grand-rapids" swallowing "east-grand-rapids"
+- Fallback: `"grand-rapids"`
+
+## Hub link resolution
+- Template uses `sv["cat"]` for hub URLs, NOT the service key
+- Because `garage-door` key needs to link to `/hubs/garage-door-services-grand-rapids`
+- And `basement-remodel` key needs to link to `/hubs/basement-remodeling-grand-rapids`
+
+## Batch generation strategy (weekly to avoid Google penalties)
+- DO NOT upload all 1,311 articles at once — Google sees it as suspicious automated content
+- Distribute across 7 weeks (~184/week, last week 391)
+- Order by intent priority: emergency (highest conversion) → 24_hour → same_day → affordable → near_me → neighborhoods (lowest)
+- Alternative: 3-week accelerated (552 + 552 + 391)
+
+## Key files to NEVER modify
+- `generate_articles.py` — the batch generation engine (modify SERVICES, CITIES, DIRS dicts only)
+- `projects/grand_rapids/` — generated output (treat as read-only after generation)
+- Existing `seo_intelligence_layer/` core files (listed at top of this file)
+- `post_processor.py` rules apply to AI-written articles, NOT to generated HTML articles

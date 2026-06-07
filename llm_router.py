@@ -356,6 +356,56 @@ def _call_cloudflare(model_id: str, system: str, user: str, stream: bool) -> str
 
 
 # ──────────────────────────────────────────────────────────────
+#  BluesMinds  (OpenAI-compatible REST — custom endpoint)
+# ──────────────────────────────────────────────────────────────
+
+def _call_bluesminds(model_id: str, system: str, user: str, stream: bool) -> str:
+    from config import SETTINGS
+    base_url = SETTINGS.get("bluesminds_api_base", "https://api.bluesminds.com/v1").rstrip("/")
+    url     = f"{base_url}/chat/completions"
+    headers = {
+        "Authorization":  f"Bearer {API_KEYS['bluesminds']}",
+        "Content-Type":   "application/json",
+    }
+    payload = {
+        "model":      model_id,
+        "max_tokens": SETTINGS["max_tokens"],
+        "stream":     stream,
+        "messages": [
+            {"role": "system", "content": system},
+            {"role": "user",   "content": user},
+        ],
+    }
+
+    req  = urllib.request.Request(url, json.dumps(payload).encode(), headers)
+    full = ""
+
+    with urllib.request.urlopen(req) as resp:
+        if stream:
+            for raw_line in resp:
+                line = raw_line.decode("utf-8").strip()
+                if not line.startswith("data:"):
+                    continue
+                data = line[5:].strip()
+                if data == "[DONE]":
+                    break
+                try:
+                    obj   = json.loads(data)
+                    delta = obj["choices"][0]["delta"].get("content", "")
+                    if delta:
+                        print(delta, end="", flush=True)
+                        full += delta
+                except (json.JSONDecodeError, KeyError):
+                    continue
+            print()
+        else:
+            body = json.loads(resp.read().decode("utf-8"))
+            full = body["choices"][0]["message"]["content"]
+
+    return full
+
+
+# ──────────────────────────────────────────────────────────────
 #  Local AI — generates content without external APIs
 # ──────────────────────────────────────────────────────────────
 
@@ -1255,13 +1305,19 @@ def _call_ai_writer(system_prompt: str, user_prompt: str, stream: bool = False) 
     """
     Call a real AI model to write article content.
     Falls back to local generation if no API key is available.
-    Tries: Anthropic -> Google (Gemini) -> Groq (Llama) -> local fallback.
+    Tries: BluesMinds -> Anthropic -> Cloudflare -> DeepSeek -> Google -> Groq -> local.
     """
+    if API_KEYS.get("bluesminds"):
+        try:
+            return _call_bluesminds("gemini-3.5-flash", system_prompt, user_prompt, stream=False)
+        except Exception as e:
+            print(c("yellow", f"  ⚠ BluesMinds failed: {e}. Trying Anthropic..."))
+
     if API_KEYS.get("anthropic"):
         try:
             return _call_anthropic("claude-sonnet-4-5", system_prompt, user_prompt, stream=False)
         except Exception as e:
-            print(c("yellow", f"  ⚠ Anthropic failed: {e}. Trying DeepSeek..."))
+            print(c("yellow", f"  ⚠ Anthropic failed: {e}. Trying Cloudflare..."))
 
     if API_KEYS.get("cloudflare"):
         try:
@@ -3276,6 +3332,8 @@ def call(
                 response = _call_cloudflare(model_id, system, user, stream)
             elif provider == "deepseek":
                 response = _call_deepseek(model_id, system, user, stream)
+            elif provider == "bluesminds":
+                response = _call_bluesminds(model_id, system, user, stream)
             elif provider == "google":
                 response = _call_google(model_id, system, user, stream)
             elif provider == "local":
@@ -3371,7 +3429,7 @@ def call(
 def _next_provider(current: str) -> str | None:
     """Return the next provider in fallback chain, or None if none available."""
     from config import API_KEYS
-    chain = ["anthropic", "cloudflare", "deepseek", "openrouter", "groq", "google", "local"]
+    chain = ["anthropic", "cloudflare", "deepseek", "bluesminds", "openrouter", "groq", "google", "local"]
     idx = chain.index(current) if current in chain else -1
     for p in chain[idx + 1:]:
         if p == "local" or API_KEYS.get(p):

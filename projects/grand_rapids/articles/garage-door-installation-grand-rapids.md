@@ -1,6 +1,6 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
-<head> <meta charset="UTF-8"> <title>Garage door installation grand rapids: Full Comparison (2026)</title> <meta name="description" content="Garage door installation grand rapids: detailed comparison of top options. We analyze tradeoffs, pricing, and real-world performance so you can decide."> <link rel="canonical" href="https://yoursite.com/garage-door-installation-grand-rapids"> <meta name="twitter:card" content="summary_large_image"> <meta name="intent" content="comparative">
+<head> <meta charset="UTF-8"> <title>Garage door installation grand rapids: Full Comparison (2026)</title> <meta name="description" content="Garage door installation grand rapids: detailed comparison of top options. We analyze tradeoffs, pricing, and real-world performance so you can decide."> <link rel="canonical" href="/garage-door-installation-grand-rapids"> <meta name="twitter:card" content="summary_large_image"> <meta name="intent" content="comparative">
 </head>
 <body itemscope itemtype="https://schema.org/Article">
 <meta itemprop="headline" content="Garage door installation grand rapids: Full Comparison">

@@ -1,8 +1,8 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Appliance repair grand rapids in Grand Rapids, MI | Same-Day Service</title><meta name="description" content="Professional appliance repair grand rapids in Grand Rapids, MI. Same-day service, licensed technicians, free estimates. Serving Kentwood, Wyoming, East Grand Rapids, and nearby areas. Call now!">
-<link rel="canonical" href="https://yoursite.com/appliance-repair-grand-rapids-in-grand-rapids-mi-same-day-se"><script type="application/ld+json">
+<link rel="canonical" href="/appliance-repair-grand-rapids-in-grand-rapids-mi-same-day-se"><script type="application/ld+json">
 {
   "@context": "https://schema.org",
   "@type": "Article",
