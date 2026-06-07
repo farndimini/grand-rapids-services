@@ -1,6 +1,5 @@
 document.addEventListener('DOMContentLoaded', function() {
 
-  // ===== Hero Slider =====
   const slider = document.querySelector('.hero-slider');
   if (slider) {
     const slides = slider.querySelectorAll('.hero-slide');
@@ -25,12 +24,16 @@ document.addEventListener('DOMContentLoaded', function() {
     if (prevBtn) prevBtn.addEventListener('click', () => { prev(); resetInterval(); });
     if (dots.length) dots.forEach((dot, i) => dot.addEventListener('click', () => { goTo(i); resetInterval(); }));
 
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'ArrowRight') { next(); resetInterval(); }
+      if (e.key === 'ArrowLeft') { prev(); resetInterval(); }
+    });
+
     function startInterval() { interval = setInterval(next, 5000); }
     function resetInterval() { clearInterval(interval); startInterval(); }
     startInterval();
   }
 
-  // ===== Scroll Reveal =====
   const revealElements = document.querySelectorAll('.reveal');
   if (revealElements.length) {
     const observer = new IntersectionObserver((entries) => {
@@ -44,7 +47,6 @@ document.addEventListener('DOMContentLoaded', function() {
     revealElements.forEach(el => observer.observe(el));
   }
 
-  // ===== Mobile Hamburger Menu =====
   const hamburger = document.querySelector('.hamburger');
   const navLinks = document.querySelector('.nav-links');
   if (hamburger && navLinks) {
@@ -58,21 +60,33 @@ document.addEventListener('DOMContentLoaded', function() {
         hamburger.classList.remove('open');
       }
     });
+    navLinks.querySelectorAll('a').forEach(function(link) {
+      link.addEventListener('click', function() {
+        navLinks.classList.remove('open');
+        hamburger.classList.remove('open');
+      });
+    });
   }
 
-  // ===== Navbar Scroll Effect =====
   const navbar = document.querySelector('.navbar');
   if (navbar) {
+    let lastScroll = 0;
     window.addEventListener('scroll', function() {
-      if (window.scrollY > 20) {
+      const current = window.scrollY;
+      if (current > 20) {
         navbar.classList.add('scrolled');
       } else {
         navbar.classList.remove('scrolled');
       }
-    });
+      if (current > 200 && current > lastScroll) {
+        navbar.style.transform = 'translateY(-100%)';
+      } else {
+        navbar.style.transform = 'translateY(0)';
+      }
+      lastScroll = current;
+    }, { passive: true });
   }
 
-  // ===== Back to Top =====
   const backToTop = document.querySelector('.back-to-top');
   if (backToTop) {
     window.addEventListener('scroll', function() {
@@ -81,20 +95,18 @@ document.addEventListener('DOMContentLoaded', function() {
       } else {
         backToTop.classList.remove('visible');
       }
-    });
+    }, { passive: true });
     backToTop.addEventListener('click', function() {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     });
   }
 
-  // ===== FAQ Accordion =====
   document.querySelectorAll('.faq-q').forEach(function(q) {
     q.addEventListener('click', function() {
       this.classList.toggle('open');
     });
   });
 
-  // ===== Smooth Scroll for Anchor Links =====
   document.querySelectorAll('a[href^="#"]').forEach(function(anchor) {
     anchor.addEventListener('click', function(e) {
       const target = document.querySelector(this.getAttribute('href'));
@@ -105,7 +117,6 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   });
 
-  // ===== Counter Animation for Stats =====
   const statNumbers = document.querySelectorAll('.stat-num');
   if (statNumbers.length) {
     const counterObserver = new IntersectionObserver((entries) => {
@@ -113,14 +124,14 @@ document.addEventListener('DOMContentLoaded', function() {
         if (entry.isIntersecting) {
           const el = entry.target;
           const target = parseInt(el.textContent.replace(/[^0-9]/g, ''));
-          if (target && target <= 10000) {
+          if (target && target <= 100000) {
             let current = 0;
-            const step = Math.max(1, Math.floor(target / 40));
+            const step = Math.max(1, Math.floor(target / 50));
             const timer = setInterval(() => {
               current += step;
               if (current >= target) { current = target; clearInterval(timer); }
               el.textContent = current.toLocaleString();
-            }, 30);
+            }, 25);
           }
           counterObserver.unobserve(el);
         }
