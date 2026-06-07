@@ -14,8 +14,72 @@
   ],
   "rewrites": [
     {
+      "source": "/appliance_repair_grand_rapids",
+      "destination": "/hubs/appliance-repair-grand-rapids"
+    },
+    {
+      "source": "/garage_door_repair_grand_rapids",
+      "destination": "/hubs/garage-door-services-grand-rapids"
+    },
+    {
+      "source": "/shower_remodel_grand_rapids",
+      "destination": "/hubs/bathroom-remodeling-grand-rapids"
+    },
+    {
+      "source": "/basement_remodel_grand_rapids",
+      "destination": "/hubs/basement-remodeling-grand-rapids"
+    },
+    {
+      "source": "/about-us",
+      "destination": "/authority/about-us"
+    },
+    {
+      "source": "/contact",
+      "destination": "/authority/contact"
+    },
+    {
+      "source": "/emergency-service",
+      "destination": "/authority/emergency-service"
+    },
+    {
+      "source": "/financing",
+      "destination": "/authority/financing"
+    },
+    {
+      "source": "/reviews-grand-rapids",
+      "destination": "/authority/reviews-grand-rapids"
+    },
+    {
+      "source": "/service-areas",
+      "destination": "/authority/service-areas"
+    },
+    {
+      "source": "/warranties",
+      "destination": "/authority/warranties"
+    },
+    {
       "source": "/sitemap/:match*",
       "destination": "/sitemap/:match*.xml"
+    },
+    {
+      "source": "/24-hour-:slug*",
+      "destination": "/24_hour/24-hour-:slug*"
+    },
+    {
+      "source": "/same-day-:slug*",
+      "destination": "/same_day/same-day-:slug*"
+    },
+    {
+      "source": "/emergency-:slug*",
+      "destination": "/emergency/emergency-:slug*"
+    },
+    {
+      "source": "/affordable-:slug*",
+      "destination": "/affordable/affordable-:slug*"
+    },
+    {
+      "source": "/near-me-:slug*",
+      "destination": "/near_me/near-me-:slug*"
     }
   ]
 }
