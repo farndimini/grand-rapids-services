@@ -1,7 +1,0 @@
-AIzaSyAOm8G9oevYZVBWUiNSwzpzRPzhf1KsHUI
-AIzaSyDUA-9VdSiefF_0juBh6jHjFu--sNMrOe8
-[https://www.googleapis.com/customsearch/v1?key=AIzaSyAOm8G9oevYZVBWUiNSwzpzRPzhf1KsHUI=maroc](https://www.googleapis.com/customsearch/v1?key=YOUR_API_KEY&cx=AIzaSyAOm8G9oevYZVBWUiNSwzpzRPzhf1KsHUI=maroc)
-
-[https://www.googleapis.com/customsearch/v1?key=AIzaSyAOm8G9oevYZVBWUiNSwzpzRPzhf1KsHUI&cx=b61990c40783346b5&q=maroc]
-
-https://www.googleapis.com/customsearch/v1?key=AIzaSyAOm8G9oevYZVBWUiNSwzpzRPzhf1KsHUI&cx=b61990c40783346b5&q=Morocco
