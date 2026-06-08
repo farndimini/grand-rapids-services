@@ -14,6 +14,10 @@
   ],
   "rewrites": [
     {
+      "source": "/blog",
+      "destination": "/blog"
+    },
+    {
       "source": "/appliance_repair_grand_rapids",
       "destination": "/hubs/appliance-repair-grand-rapids"
     },
