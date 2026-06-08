@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>الوكيل | Al-Wakeel – Personal Finance Manager</title>
+<meta name="description" content="Take control of your finances with الوكيل. Track income and expenses, get smart saving tips, and read expert financial guides — all in one place.">
+<meta name="keywords" content="personal budget, finance manager, money saving tips, budget calculator, financial planning">
+<link rel="canonical" href="https://alwakeel.example.com/">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<link rel="stylesheet" href="css/style.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="navbar" role="navigation" aria-label="Main navigation">
+  <div class="container">
+    <a href="#home" class="nav-logo" data-nav><i class="fas fa-wallet"></i> الوكيل</a>
+    <button class="nav-toggle" id="navToggle" aria-label="Toggle menu"><i class="fas fa-bars"></i></button>
+    <ul class="nav-links" id="navLinks">
+      <li><a href="#home" data-nav class="active"><i class="fas fa-home"></i> Home</a></li>
+      <li><a href="#budget" data-nav><i class="fas fa-calculator"></i> Budget</a></li>
+      <li><a href="#articles" data-nav><i class="fas fa-newspaper"></i> Articles</a></li>
+      <li><a href="#faq" data-nav><i class="fas fa-question-circle"></i> FAQ</a></li>
+    </ul>
+  </div>
+</nav>
+
+<!-- HOME -->
+<section id="home" class="section active" role="region" aria-label="Home">
+  <div class="hero">
+    <div class="hero-bg"></div>
+    <div class="container hero-content">
+      <div class="hero-badge"><i class="fas fa-shield-alt"></i> Your Personal Finance Hub</div>
+      <h1>Take Control of Your<br>Financial Future</h1>
+      <p>Track your income and expenses, discover smart saving strategies, and read expert guides — all in one place. No sign-ups, no fees.</p>
+      <div style="display:flex;flex-wrap:wrap;gap:14px;justify-content:center">
+        <a href="#budget" class="btn btn-primary" data-nav><i class="fas fa-calculator"></i> Start Budgeting</a>
+        <a href="#articles" class="btn btn-secondary" data-nav><i class="fas fa-book-open"></i> Read Articles</a>
+      </div>
+    </div>
+  </div>
+  <div class="container" style="padding-bottom:80px">
+    <div class="stats-grid" id="homeStats">
+      <div class="stat-card"><div class="stat-icon green"><i class="fas fa-piggy-bank"></i></div><div class="stat-number">50/30/20</div><div class="stat-label">Smart Budget Rule</div></div>
+      <div class="stat-card"><div class="stat-icon blue"><i class="fas fa-chart-line"></i></div><div class="stat-number">10+</div><div class="stat-label">Expert Guides</div></div>
+      <div class="stat-card"><div class="stat-icon amber"><i class="fas fa-lightbulb"></i></div><div class="stat-number">100%</div><div class="stat-label">Free to Use</div></div>
+      <div class="stat-card"><div class="stat-icon red"><i class="fas fa-lock"></i></div><div class="stat-number">Local</div><div class="stat-label">Data Stays on Your Device</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- BUDGET -->
+<section id="budget" class="section" role="region" aria-label="Budget Manager">
+  <div class="container">
+    <div class="section-header">
+      <h2><i class="fas fa-calculator" style="color:var(--indigo);margin-right:10px"></i> Personal Budget Manager</h2>
+      <p>Add your income and expenses to see where your money goes. All data stays on your device.</p>
+    </div>
+    <div class="budget-layout">
+      <div>
+        <div class="budget-card">
+          <h3><i class="fas fa-plus-circle" style="color:var(--green)"></i> Add Income</h3>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Source</label>
+              <input type="text" id="incomeSource" placeholder="e.g. Salary" />
+            </div>
+            <div class="form-group">
+              <label>Amount ($)</label>
+              <input type="number" id="incomeAmount" placeholder="0.00" min="0" step="0.01" />
+            </div>
+          </div>
+          <button class="btn btn-green btn-sm" onclick="addIncome()"><i class="fas fa-plus"></i> Add Income</button>
+        </div>
+        <div class="budget-card" style="margin-top:20px">
+          <h3><i class="fas fa-minus-circle" style="color:var(--red)"></i> Add Expense</h3>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Description</label>
+              <input type="text" id="expenseDesc" placeholder="e.g. Groceries" />
+            </div>
+            <div class="form-group">
+              <label>Category</label>
+              <select id="expenseCat">
+                <option value="Housing">Housing</option>
+                <option value="Food">Food</option>
+                <option value="Transport">Transport</option>
+                <option value="Utilities">Utilities</option>
+                <option value="Healthcare">Healthcare</option>
+                <option value="Entertainment">Entertainment</option>
+                <option value="Shopping">Shopping</option>
+                <option value="Education">Education</option>
+                <option value="Savings">Savings</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Amount ($)</label>
+              <input type="number" id="expenseAmount" placeholder="0.00" min="0" step="0.01" />
+            </div>
+            <div class="form-group" style="display:flex;align-items:flex-end">
+              <button class="btn btn-sm btn-secondary" style="width:100%" onclick="addExpense()"><i class="fas fa-plus"></i> Add Expense</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="budget-card">
+          <h3><i class="fas fa-chart-pie"></i> Overview</h3>
+          <div id="budgetSummary">
+            <p style="color:var(--text-muted)">Add your income and expenses to see your financial summary.</p>
+          </div>
+          <div class="chart-wrapper"><canvas id="budgetChart"></canvas></div>
+          <div id="tipBox" class="tip-box" style="display:none"></div>
+        </div>
+        <div class="budget-card" style="margin-top:20px">
+          <h3><i class="fas fa-list"></i> Income</h3>
+          <ul class="income-list" id="incomeList"><li style="color:var(--text-muted);font-size:.88rem">No income added yet.</li></ul>
+        </div>
+        <div class="budget-card" style="margin-top:20px">
+          <h3><i class="fas fa-list"></i> Expenses</h3>
+          <ul class="expense-list" id="expenseList"><li style="color:var(--text-muted);font-size:.88rem">No expenses added yet.</li></ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ARTICLES -->
+<section id="articles" class="section" role="region" aria-label="Financial Articles">
+  <div class="container">
+    <div class="section-header">
+      <h2><i class="fas fa-newspaper" style="color:var(--indigo);margin-right:10px"></i> Financial Guides & Tips</h2>
+      <p>Expert-written articles to help you save money, manage debt, invest wisely, and build wealth.</p>
+    </div>
+    <div class="article-filters" id="articleFilters">
+      <button class="filter-btn active" data-filter="all">All</button>
+      <button class="filter-btn" data-filter="saving">Saving</button>
+      <button class="filter-btn" data-filter="budget">Budget</button>
+      <button class="filter-btn" data-filter="debt">Debt</button>
+      <button class="filter-btn" data-filter="investment">Investment</button>
+      <button class="filter-btn" data-filter="general">General</button>
+    </div>
+    <div id="articleListView" class="article-list-view">
+      <div class="articles-grid" id="articlesGrid"></div>
+    </div>
+    <div id="articleDetailView" class="article-detail">
+      <div class="article-content" id="articleContent"></div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section id="faq" class="section" role="region" aria-label="Frequently Asked Questions">
+  <div class="container">
+    <div class="section-header">
+      <h2><i class="fas fa-question-circle" style="color:var(--indigo);margin-right:10px"></i> Frequently Asked Questions</h2>
+      <p>Common questions about personal budgeting and financial management.</p>
+    </div>
+    <div class="faq-list" id="faqList"></div>
+  </div>
+</section>
+
+<!-- AI CHAT BUBBLE -->
+<button class="ai-chat-btn" id="aiChatBtn" onclick="toggleChat()" aria-label="Open AI assistant">
+  <i class="fas fa-robot"></i>
+  <span class="ai-chat-badge">AI</span>
+</button>
+
+<!-- AI CHAT PANEL -->
+<div class="ai-chat-panel" id="aiChatPanel">
+  <div class="ai-chat-header">
+    <div><i class="fas fa-robot"></i> الوكيل AI</div>
+    <div class="ai-chat-header-actions">
+      <select id="aiModelSelect" class="ai-model-select" onchange="chatModel=this.value"></select>
+      <button onclick="clearChat()" title="Clear chat"><i class="fas fa-trash"></i></button>
+      <button onclick="toggleChat()" title="Close"><i class="fas fa-times"></i></button>
+    </div>
+  </div>
+  <div class="ai-chat-messages" id="aiChatMessages"></div>
+  <div class="ai-chat-status" id="aiChatStatus" style="display:none"><i class="fas fa-spinner fa-spin"></i> Thinking...</div>
+  <div class="ai-chat-input-row">
+    <input type="text" id="aiChatInput" placeholder="Ask about budgeting, saving..." />
+    <button onclick="sendChatMessage()" id="aiChatSend"><i class="fas fa-paper-plane"></i></button>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <div class="container">
+    <div class="footer-links">
+      <a href="#home" data-nav>Home</a>
+      <a href="#budget" data-nav>Budget</a>
+      <a href="#articles" data-nav>Articles</a>
+      <a href="#faq" data-nav>FAQ</a>
+    </div>
+    <p>&copy; 2026 الوكيل | Al-Wakeel. All rights reserved. Data is stored locally on your device.</p>
+  </div>
+</footer>
+
+<script src="js/data.js"></script>
+<script src="js/budget.js"></script>
+<script src="js/articles.js"></script>
+<script src="js/faq.js"></script>
+<script src="js/router.js"></script>
+<script src="js/ai_chat.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

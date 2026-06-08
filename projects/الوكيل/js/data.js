@@ -1,0 +1,1079 @@
+﻿/* ====== HELPERS ====== */
+const $ = id => document.getElementById(id)
+const escHtml = str => {
+  const d = document.createElement('div')
+  d.textContent = str
+  return d.innerHTML
+}
+const formatCurrency = n => '$' + Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+
+/* ====== STATE ====== */
+let state = { incomes: [], expenses: [] }
+
+function saveState() {
+  try { localStorage.setItem('alwakeel_state', JSON.stringify(state)) } catch (e) {}
+}
+
+function loadState() {
+  try {
+    const d = localStorage.getItem('alwakeel_state')
+    if (d) state = JSON.parse(d)
+  } catch (e) {}
+}
+
+/* ====== ARTICLES ====== */
+const ARTICLES = [
+  {
+    slug: 'how-to-save-money-on-groceries-every-month',
+    category: 'saving',
+    title: 'How to Save Money on Groceries Every Month',
+    excerpt: 'Practical strategies to cut your grocery bill by 10-30% every month without sacrificing quality.',
+    content: `<p class="lead">Groceries are a regular expense that can quickly add up if you're not careful. But saving money on groceries doesn't mean you have to sacrifice quality or go without your favorite foods. With some simple tips and planning, you can reduce your monthly grocery bill by 20% or more. Let's explore practical ways beginners can cut costs and still enjoy healthy, tasty meals.</p>
+
+<h2>Create a Realistic Grocery Budget</h2>
+
+The first step to saving money on groceries is knowing how much you typically spend. Track your spending for one month by saving receipts or using a budgeting app. Once you have the number, set a reasonable budget that's about 10-20% less than your current spend. For example, if you spend $500 a month, aim to cut down to around $400-$450.
+
+<h2>Plan Meals and Make a Shopping List</h2>
+
+Planning meals ahead reduces impulse buys and food waste. Write a weekly meal plan and list all the ingredients needed. Stick strictly to your grocery list when you shop to avoid spending on extras. Planning also helps you buy in bulk or choose sale items strategically.
+
+<h2>Shop Smart: Buy Generic and Use Coupons</h2>
+
+Choosing store brands instead of name brands can save you 15-30% per item. Many generic products have the same quality at a lower price. Additionally, collect coupons from newspapers, apps, or store loyalty programs. Using coupons can cut costs by an additional 5-10% on your total bill.
+
+<div class="table-wrap"><table>
+  <thead>
+    <tr>
+      <th>Saving Strategy</th>
+      <th>Average Savings</th>
+      <th>Example on $500 Monthly Spend</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Switch to Store Brands</td>
+      <td>15%-30%</td>
+      <td>$75 - $150</td>
+    </tr>
+    <tr>
+      <td>Use Coupons</td>
+      <td>5%-10%</td>
+      <td>$25 - $50</td>
+    </tr>
+    <tr>
+      <td>Meal Planning</td>
+      <td>10%-20%</td>
+      <td>$50 - $100</td>
+    </tr>
+  </tbody>
+</table></div>
+
+<h2>Buy in Bulk and Avoid Processed Foods</h2>
+
+Buying staples like rice, pasta, beans, and frozen vegetables in bulk can save you money and reduce trip frequency. Bulk purchases often offer 10%-20% savings. At the same time, processed and prepared foods tend to cost more per serving. Preparing meals yourself saves money and lets you control ingredients.
+
+<div class="tip-callout"><strong>Pro Tip:</strong> Shop seasonal produce to get fresh fruits and vegetables at lower prices. Seasonal items can cost up to 25% less and taste better too!</div>
+
+<h2>Reduce Food Waste and Use Leftovers</h2>
+
+Food waste is money wasted. Try to store food properly and use leftovers creatively. For example, leftover roasted vegetables can be added to soups or omelets. Leftover meats can be turned into sandwiches or salads. Reducing waste can save you up to $50 a month.
+
+<div class="cta-box"><p><strong>Start Saving Today</strong> Take control of your grocery spending by planning your meals and shopping smart. Watch your savings grow every month!</p><a href="#budget" class="btn btn-primary btn-sm" data-nav><i class="fas fa-calculator"></i> Start Saving</a></div>`
+  },
+  {
+    slug: 'the-best-budgeting-apps-of-2026-compared',
+    category: 'budget',
+    title: 'The Best Budgeting Apps of 2026 Compared',
+    excerpt: 'Compare the top budgeting apps of 2026 to find the perfect tool for managing your money.',
+    content: `<p class="lead">Finding the right budgeting app can transform your finances, helping you save more, spend wisely, and track your money effortlessly. In 2026, there are plenty of options tailored to different needs and goals. Whether you're saving for a $5,000 emergency fund or want to keep your monthly expenses under 50% of your income, the perfect app is just a download away. Let's explore the best budgeting apps available this year and see which one fits your personal finance style.</p>
+
+<h2>Why Use a Budgeting App?</h2>
+<p>Budgeting apps make managing your money simple, especially for beginners. Instead of using complicated spreadsheets or guessing where your money goes, these apps automatically track your income and expenses. Many apps also help you set savings goals, like building a $200 monthly nest egg or reducing dining out expenses by 25%. With notifications and visual charts, they keep you on track and motivated.</p>
+
+<h2>Top Budgeting Apps in 2026</h2>
+<p>Here's a quick overview of the most popular budgeting apps this year. Each app offers distinct features, pricing, and benefits suitable for different budgets and goals. Below is a side-by-side comparison to help you decide.</p>
+
+<div class="table-wrap"><table>
+  <thead>
+    <tr>
+      <th>App Name</th>
+      <th>Cost</th>
+      <th>Best For</th>
+      <th>Key Features</th>
+      <th>Rating (out of 5)</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>WalletWise</td>
+      <td>Free with optional $4.99/month premium</td>
+      <td>Beginners and goal-setting</td>
+      <td>Automated tracking, savings goals, bill reminders</td>
+      <td>4.7</td>
+    </tr>
+    <tr>
+      <td>SpendSmart</td>
+      <td>$7.99/month</td>
+      <td>Detailed expense breakdowns</td>
+      <td>Advanced reports, subscription tracking, multi-currency</td>
+      <td>4.5</td>
+    </tr>
+    <tr>
+      <td>SimpleBudget</td>
+      <td>Free</td>
+      <td>Basic budget tracking</td>
+      <td>Manual entry, clear categories, no ads</td>
+      <td>4.3</td>
+    </tr>
+    <tr>
+      <td>CashControl Pro</td>
+      <td>$12/year</td>
+      <td>Minimalist users</td>
+      <td>Offline access, customizable categories, no bank linking</td>
+      <td>4.6</td>
+    </tr>
+  </tbody>
+</table></div>
+
+<h2>How to Choose the Right App for You</h2>
+<p>Start by asking what your primary budgeting goal is. Are you trying to save $500 for a vacation, or do you want to reduce your monthly grocery bill by 15%? If automation is important, an app like WalletWise that links to your bank accounts might be best. If you prefer privacy and manual entry, CashControl Pro is a great low-cost option.</p>
+<p>Consider your comfort with technology. Many apps let you start free and upgrade later, so it's worth testing a couple before committing. Look for apps that fit your monthly budget — Spending $7.99 may feel small, but adds up if you try multiple apps.</p>
+
+<div class="tip-callout"><strong>Pro Tip:</strong> Before deciding, list your monthly income and expenses. Pick an app that can categorize your spending clearly. Knowing you spend 30% of $3,000 income on rent or want to limit dining out to $200 per month will help tailor your experience and stay motivated.</div>
+
+<h2>Final Thoughts</h2>
+<p>Budgeting apps in 2026 offer a variety of tools suited to beginners and experienced users alike. Whether you want to save a specific amount, reduce debt, or simply know where every dollar goes, there's an app that can help. By choosing one that matches your needs and budget, you'll be on your way to smarter money management and financial peace of mind.</p>
+
+<div class="cta-box"><p><strong>Start Budgeting Now</strong> Take control of your finances today by trying one of these top budgeting apps. Set your goals, track your spending, and watch your savings grow.</p><a href="#budget" class="btn btn-primary btn-sm" data-nav><i class="fas fa-calculator"></i> Start Budgeting Free</a></div>`
+  },
+  {
+    slug: 'debt-snowball-vs-avalanche-which-is-faster',
+    category: 'debt',
+    title: 'Debt Snowball vs Avalanche: Which is Faster?',
+    excerpt: 'Debt snowball or avalanche? Learn which debt payoff method saves more money and works faster.',
+    content: `<p class="lead">If you're struggling with multiple debts and want to pay them off quickly, you've probably heard of the debt snowball and debt avalanche methods. Both strategies help you reduce debt, but they differ in how you attack your balances. Let's explore which method can free you from debt faster and how to choose the best approach for your situation.</p>
+
+<h2>Understanding the Debt Snowball Method</h2>
+<p>The debt snowball method focuses on paying off your smallest debts first, regardless of interest rates. You make minimum payments on all your debts, and put any extra money toward the smallest balance. Once that debt is paid off, you move to the next smallest.</p>
+<p>For example, if you owe $500 on a credit card and $1,500 on a personal loan, you pay off the $500 debt first. This builds quick wins and boosts motivation.</p>
+
+<h2>How the Debt Avalanche Method Works</h2>
+<p>The debt avalanche method targets debts with the highest interest rates first. You pay minimum payments on all debts, but put extra money toward the debt costing you the most in interest.</p>
+<p>For example, if one credit card charges 22% interest and a student loan has 5%, you focus on the credit card. This method generally saves more money on interest and can be faster overall.</p>
+
+<h2>Comparing Speed and Cost: Snowball vs Avalanche</h2>
+<p>Which method really pays off debt faster? Let's look at an example with three debts:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Debt</th>
+<th>Balance</th>
+<th>Interest Rate</th>
+<th>Minimum Payment</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Credit Card A</td>
+<td>$2,000</td>
+<td>18%</td>
+<td>$60</td>
+</tr>
+<tr>
+<td>Credit Card B</td>
+<td>$1,000</td>
+<td>22%</td>
+<td>$35</td>
+</tr>
+<tr>
+<td>Personal Loan</td>
+<td>$3,000</td>
+<td>8%</td>
+<td>$90</td>
+</tr>
+</tbody>
+</table></div>
+<p>Assuming you can pay $400 total each month, here's a comparison:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Months to Debt Free</th>
+<th>Total Interest Paid</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Debt Snowball</td>
+<td>14 months</td>
+<td>$420</td>
+</tr>
+<tr>
+<td>Debt Avalanche</td>
+<td>12 months</td>
+<td>$360</td>
+</tr>
+</tbody>
+</table></div>
+
+<h2>Which Method Should You Choose?</h2>
+<p>The avalanche method is mathematically faster and cheaper because it reduces the interest you pay. Paying off the 22% interest credit card first minimizes extra charges.</p>
+<p>However, the snowball method can feel better emotionally. Knocking out smaller debts quickly gives a boost of encouragement that keeps many on track to become debt-free.</p>
+<p>In reality, the best plan is the one you stick with consistently. If motivation is key, start with snowball. If saving money feels motivating, pick avalanche.</p>
+
+<div class="tip-callout"><strong>Pro Tip:</strong> If you're unsure, try a hybrid approach — pay off your smallest debt first for a quick win, then switch to avalanche to save on interest.</div>
+
+<div class="cta-box"><p><strong>Start Your Debt Plan</strong> Choose the method that fits your goals and budget. Taking the first step today can save you hundreds in interest and months of stress.</p><a href="#budget" class="btn btn-primary btn-sm" data-nav><i class="fas fa-calculator"></i> Create Your Plan</a></div>`
+  },
+  {
+    slug: 'index-funds-vs-etfs-what-is-the-difference',
+    category: 'investment',
+    title: 'Index Funds vs ETFs: What is the Difference?',
+    excerpt: 'Understand the key differences between index funds and ETFs to choose the right investment for you.',
+    content: `<p class="lead">When starting your investment journey, you might have come across two popular options: index funds and ETFs. Both are affordable ways to invest in a broad range of stocks or bonds, but how do they differ? This guide breaks down the key differences to help you choose the right one for your financial goals.</p>
+
+<h2>What Are Index Funds?</h2>
+<p>Index funds are mutual funds designed to track a specific market index like the S&P 500. When you invest $1,000 in an index fund, your money is automatically spread across all the companies in that index. This means you get instant diversification without having to pick individual stocks.</p>
+<p>Index funds are usually bought and sold at the end of the trading day at the fund's net asset value (NAV). They often have low expense ratios, typically around <strong>0.05% to 0.25%</strong>, which means you pay $0.50 to $2.50 annually for every $1,000 invested.</p>
+
+<h2>What Are ETFs?</h2>
+<p>ETFs, or exchange-traded funds, are similar to index funds because they also track indexes. However, ETFs are traded on stock exchanges throughout the day, like individual stocks. This means you can buy or sell ETFs at any point during market hours.</p>
+<p>ETFs often have expense ratios as low as <strong>0.03% to 0.20%</strong>. For example, with a $5,000 investment, you might pay just $1.50 annually on a 0.03% fee. ETFs can be bought with a brokerage account through commissions or even commission-free at many platforms.</p>
+
+<h2>Key Differences Between Index Funds and ETFs</h2>
+<div class="table-wrap"><table>
+  <tr>
+    <th>Feature</th>
+    <th>Index Funds</th>
+    <th>ETFs</th>
+  </tr>
+  <tr>
+    <td>Trading</td>
+    <td>Once per day after market close</td>
+    <td>Throughout the trading day</td>
+  </tr>
+  <tr>
+    <td>Minimum Investment</td>
+    <td>Often $1,000 or more</td>
+    <td>Usually the price of one share (can be under $100)</td>
+  </tr>
+  <tr>
+    <td>Fees (Expense Ratio)</td>
+    <td>0.05% to 0.25%</td>
+    <td>0.03% to 0.20%</td>
+  </tr>
+  <tr>
+    <td>Buying/Selling Costs</td>
+    <td>No trading commissions</td>
+    <td>Possible trading commissions, but often free</td>
+  </tr>
+  <tr>
+    <td>Dividend Reinvestment</td>
+    <td>Often automatic</td>
+    <td>May require manual reinvestment</td>
+  </tr>
+</table></div>
+
+<h2>Which One Should You Choose?</h2>
+<p>If you want a hands-off investment with simple automatic purchases and dividend reinvestments, index funds could be ideal. For example, with $1,000, you can start investing without needing a brokerage account.</p>
+<p>On the other hand, ETFs offer flexibility for those who want to trade anytime during market hours and invest smaller amounts. Many ETFs allow you to buy just one share, sometimes costing less than $50, allowing you to begin investing without large upfront sums.</p>
+
+<div class="tip-callout"><strong>Pro Tip:</strong> ETFs can sometimes be bought commission-free on platforms like Robinhood or Fidelity. Check your broker's fee schedule to avoid unnecessary trading costs, especially if you plan to trade frequently.</div>
+
+<h2>Final Thoughts</h2>
+<p>Both index funds and ETFs offer low-cost, diversified investment options that can help grow your savings over time. The choice depends on how you prefer to invest — whether you value simplicity and automatic investing or want the freedom to trade anytime.</p>
+<p>Starting with either an index fund or an ETF with as little as $100 to $1,000 can put you on track toward your financial goals.</p>
+
+<div class="cta-box"><p><strong>Optimize Your Budget</strong> Ready to start growing your money? Picking between index funds and ETFs is the first step toward smart investing. Choose your favorite and begin today for sustainable financial growth.</p><a href="#budget" class="btn btn-primary btn-sm" data-nav><i class="fas fa-calculator"></i> Start Investing</a></div>`
+  },
+  {
+    slug: 'how-to-negotiate-your-credit-card-interest-rate',
+    category: 'debt',
+    title: 'How to Negotiate Your Credit Card Interest Rate',
+    excerpt: 'Step-by-step guide to negotiating a lower credit card interest rate and saving hundreds per year.',
+    content: `<p class="lead">High credit card interest rates can make paying off your balance feel impossible. But did you know you can often negotiate a lower rate with your credit card company? Lowering your interest rate even by a few percentage points can save you hundreds or thousands of dollars in interest charges. This guide will walk you through how to confidently ask for a better rate and improve your financial health.</p>
+
+<h2>Why Negotiate Your Credit Card Interest Rate?</h2>
+
+<p>Credit card interest rates, also called APR (annual percentage rate), typically range from 15% to 25%, though some cards may be higher. If you carry a balance month to month, the interest cost adds up quickly. For example, on a $5,000 balance with a 20% APR, you could pay around $83 per month just in interest.</p>
+
+<p>Lowering your APR can reduce these interest charges and help you pay off your debt faster. Even a drop from 20% to 15% could save you around $20 in interest every month on the same balance.</p>
+
+<h2>Get Ready: What to Know Before You Call</h2>
+
+<p>Before contacting your credit card company, gather some key information:</p>
+
+<ul>
+  <li>Your current interest rate and balance</li>
+  <li>Your payment history — on-time payments show you're a responsible borrower</li>
+  <li>Credit score — a higher score increases your chances of success</li>
+  <li>Current rates offered by competitors</li>
+</ul>
+
+<p>Have a goal in mind, such as reducing your APR by 3-5% or to a specific number like 12%. This shows you are serious and informed.</p>
+
+<h2>Making the Call: How to Ask for a Lower Rate</h2>
+
+<p>When you call your credit card issuer, here's a simple script outline to follow:</p>
+
+<ul>
+  <li>Greet the representative politely and state your request clearly.</li>
+  <li>Explain you have been a loyal customer making on-time payments.</li>
+  <li>Mention that you've researched and other cards are offering lower rates, but you'd prefer to stay.</li>
+  <li>Ask if they can lower your APR. If denied, politely ask if there is any other or special offer available.</li>
+</ul>
+
+<p>Be calm, patient, and ready to escalate your request to a supervisor if needed.</p>
+
+<h2>What to Expect: Examples of Interest Rate Savings</h2>
+
+<p>Here's an example of how much money you can save by negotiating a lower rate on a $5,000 balance carried over a year. Assume you pay $150 monthly and only pay interest and principal on the remaining balance:</p>
+
+<div class="table-wrap"><table>
+  <thead>
+    <tr>
+      <th>APR</th>
+      <th>Monthly Interest</th>
+      <th>Estimated Total Interest Paid in 1 Year</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>20%</td>
+      <td>$83</td>
+      <td>$1,000</td>
+    </tr>
+    <tr>
+      <td>15%</td>
+      <td>$62</td>
+      <td>$750</td>
+    </tr>
+    <tr>
+      <td>12%</td>
+      <td>$50</td>
+      <td>$600</td>
+    </tr>
+  </tbody>
+</table></div>
+
+<p>Lowering your rate from 20% to 12% can save you $400 in interest payments over a year, making a big difference in your financial freedom.</p>
+
+<div class="tip-callout"><strong>Pro Tip:</strong> Call after making an on-time payment or during a time when credit card companies are actively trying to retain customers, like at the end of the month or quarter.</div>
+
+<h2>Other Strategies if Your Request is Denied</h2>
+
+<p>If your issuer refuses to lower your rate, consider these options:</p>
+
+<ul>
+  <li>Apply for a new credit card with a lower introductory APR (often 0% for 12-18 months).</li>
+  <li>Transfer your balance to a lower-rate card, usually with a balance transfer fee of 3-5%.</li>
+  <li>Focus on paying down your balance aggressively to reduce interest charges.</li>
+</ul>
+
+<p>Remember, persistence and being informed can greatly improve your chances of success.</p>
+
+<div class="cta-box"><p><strong>Start Your Debt Plan</strong> Take control of your credit card debt today by negotiating lower interest and creating a repayment plan tailored for you.</p><a href="#budget" class="btn btn-primary btn-sm" data-nav><i class="fas fa-calculator"></i> Create Your Plan</a></div>`
+  },
+  {
+    slug: '10-side-hustles-that-pay-500-dollars-per-month',
+    category: 'general',
+    title: '10 Side Hustles That Pay $500+ Per Month',
+    excerpt: 'Discover 10 proven side hustles that can earn you $500 or more every month in 2026.',
+    content: `<p class="lead">Looking to boost your income but don't want a second full-time job? A side hustle can be a perfect solution. Earning an extra $500 per month is achievable with the right hustle, and it can provide financial breathing room or help you save faster. Here are 10 practical side hustles that beginners can start today to comfortably make around $500 each month.</p>
+
+<h2>Why Earning an Extra $500 Matters</h2>
+<p>An additional $500 monthly can cover bills, groceries, or even put toward paying off debt. If you worked an extra 10 hours a week at $12.50 an hour, you'd earn $500. Side hustles often offer flexibility and the chance to develop new skills while growing your income.</p>
+
+<div class="tip-callout"><strong>Key Insight:</strong> Consistency matters. Earning $500 per month often comes from steady effort — think daily small tasks or regular weekly work that adds up.</div>
+
+<h2>Top 10 Side Hustles to Make $500 a Month</h2>
+<p>Here's a list of side gigs with simple start-up steps and realistic earning potential:</p>
+
+<div class="table-wrap"><table>
+<tr>
+  <th>Side Hustle</th>
+  <th>Estimated Hours/Week</th>
+  <th>Hourly or Project Rate</th>
+  <th>Monthly Income</th>
+  <th>Easy to Start?</th>
+</tr>
+<tr>
+  <td>Freelance Writing</td>
+  <td>8</td>
+  <td>$15/hour</td>
+  <td>$480</td>
+  <td>Yes</td>
+</tr>
+<tr>
+  <td>Dog Walking</td>
+  <td>10</td>
+  <td>$12/walk</td>
+  <td>$480</td>
+  <td>Yes</td>
+</tr>
+<tr>
+  <td>Online Tutoring</td>
+  <td>6</td>
+  <td>$20/hour</td>
+  <td>$480</td>
+  <td>Yes</td>
+</tr>
+<tr>
+  <td>Sell Handmade Crafts</td>
+  <td>Varies</td>
+  <td>$25/item</td>
+  <td>$500</td>
+  <td>Yes</td>
+</tr>
+<tr>
+  <td>Rideshare Driving</td>
+  <td>8</td>
+  <td>$15/hour</td>
+  <td>$480</td>
+  <td>Yes</td>
+</tr>
+<tr>
+  <td>Virtual Assistant</td>
+  <td>10</td>
+  <td>$12/hour</td>
+  <td>$480</td>
+  <td>Yes</td>
+</tr>
+<tr>
+  <td>Rent Out a Room</td>
+  <td>Passive</td>
+  <td>$500/month</td>
+  <td>$500</td>
+  <td>Yes</td>
+</tr>
+<tr>
+  <td>Social Media Management</td>
+  <td>8</td>
+  <td>$15/hour</td>
+  <td>$480</td>
+  <td>Yes</td>
+</tr>
+<tr>
+  <td>Babysitting</td>
+  <td>10</td>
+  <td>$12/hour</td>
+  <td>$480</td>
+  <td>Yes</td>
+</tr>
+<tr>
+  <td>Survey and Product Testing</td>
+  <td>Varies</td>
+  <td>$5-$10/survey</td>
+  <td>$500</td>
+  <td>Yes</td>
+</tr>
+</table></div>
+
+<h2>Getting Started with Your Side Hustle</h2>
+<p>Start by choosing a hustle that fits your skills and schedule. For example, if you enjoy writing, freelance platforms can connect you with clients quickly. If you prefer being outdoors, dog walking or rideshare driving could work well.</p>
+<p>Set a specific goal of earning $500 monthly, and break it down to how many hours or tasks are needed per week. Then, track your time and income to stay motivated and adjust if needed.</p>
+
+<h2>Tips for Success and Growth</h2>
+<p>Always deliver quality work to build a good reputation, which can lead to more clients and potentially higher rates. Don't be afraid to raise your rates once you gain experience — an increase of just 10-20% can help you reach $500 faster with less effort.</p>
+
+<div class="tip-callout"><strong>Pro Tip:</strong> Save at least 20% of your side hustle earnings for taxes or unexpected expenses, especially if you're freelancing or self-employed.</div>
+
+<div class="cta-box"><p><strong>Take Control Now</strong> Ready to start your side hustle journey and track your earnings easily? Use our Budget Manager to plan for that extra $500 a month.</p><a href="#budget" class="btn btn-primary btn-sm" data-nav><i class="fas fa-calculator"></i> Use Budget Manager</a></div>`
+  },
+  {
+    slug: 'how-to-teach-your-kids-about-money',
+    category: 'general',
+    title: 'How to Teach Your Kids About Money',
+    excerpt: 'Simple strategies to teach children about earning, saving, and spending money wisely.',
+    content: `<p class="lead">Teaching kids about money is one of the most valuable lessons parents can give. Understanding money helps children develop smart habits that will benefit them throughout life. Whether it's saving for a toy or learning to share, early money skills set the foundation for financial responsibility.</p>
+
+<h2>Start With Basic Money Concepts</h2>
+<p>Begin by explaining what money is and why it's important. Use real cash or coins to make it tangible. Show your kids that money is earned by working and is used to buy things like food, clothes, and toys.</p>
+<p>Young kids can understand simple ideas like saving coins in a piggy bank or how spending money means you have less left. Keep it fun and relatable to everyday life.</p>
+
+<h2>Introduce an Allowance System</h2>
+<p>An allowance is a practical way to teach money management. Give your child a weekly amount, like $5 or $10, based on their age and your budget. This helps them learn to budget and make decisions about spending and saving.</p>
+<div class="table-wrap"><table>
+  <thead>
+    <tr>
+      <th>Age</th>
+      <th>Weekly Allowance</th>
+      <th>Suggested Savings Goal</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>5-7 years</td>
+      <td>$3-$5</td>
+      <td>Save 20% ($0.60-$1)</td>
+    </tr>
+    <tr>
+      <td>8-10 years</td>
+      <td>$5-$7</td>
+      <td>Save 25% ($1.25-$1.75)</td>
+    </tr>
+    <tr>
+      <td>11-13 years</td>
+      <td>$7-$10</td>
+      <td>Save 30% ($2.10-$3)</td>
+    </tr>
+  </tbody>
+</table></div>
+<p>Encourage your kids to divide their allowance into spending, saving, and sharing jars to visualize priorities. This division guides them to save consistently and learn generosity.</p>
+
+<h2>Use Real-Life Opportunities to Practice</h2>
+<p>Take your kids shopping and let them make small purchases with their own money. For example, if they want a $10 toy, help them decide if it fits their budget or if they need to save more. This hands-on practice teaches budgeting and delayed gratification.</p>
+<p>Discuss sales and price comparisons. Show them how waiting for discounts or choosing less expensive items can stretch their money further. Understanding value is a key money skill that pays off over time.</p>
+
+<div class="tip-callout"><strong>Pro Tip:</strong> Use a clear jar or transparent piggy bank for savings. Seeing their money grow motivates kids to save more and keeps the process exciting.</div>
+
+<h2>Teach the Importance of Giving</h2>
+<p>Money isn't just for spending or saving; it's also a tool for helping others. Encourage your child to set aside 5-10% of their allowance for charity or gifts. This practice builds empathy and reminds them that responsible money use includes generosity.</p>
+
+<h2>Review and Celebrate Progress</h2>
+<p>Regularly review your child's savings and spending choices together. Celebrate when they reach a savings goal or make smart spending decisions. Positive reinforcement makes learning about money enjoyable and memorable.</p>
+
+<div class="cta-box"><p><strong>Take Control Now</strong> Help your kids build smart money habits today to secure their financial future.</p><a href="#budget" class="btn btn-primary btn-sm" data-nav><i class="fas fa-calculator"></i> Use Budget Manager</a></div>`
+  },
+  {
+    slug: 'rent-or-buy-the-financial-decision-guide',
+    category: 'budget',
+    title: 'Rent or Buy: The Financial Decision Guide',
+    excerpt: 'Should you rent or buy a home? A complete financial comparison to help you decide.',
+    content: `<p class="lead">Deciding whether to rent or buy a home is one of the biggest financial choices you'll make. Both options have pros and cons, and understanding the costs involved can help you make a smart decision that fits your budget and lifestyle. This guide breaks down the key financial factors so you can choose wisely.</p>
+
+<h2>Upfront and Ongoing Costs</h2>
+When buying a home, you usually need a down payment, often around 20% of the purchase price. For example, on a $300,000 house, that's $60,000 upfront. Beyond that, you pay closing costs (around 3% of the home price) and ongoing expenses like mortgage payments, property taxes, insurance, and maintenance.
+
+Renting typically requires a security deposit equal to one month's rent, plus the first month's rent. If your rent is $1,500 per month, your initial cost is about $3,000. Monthly rent payments can increase with inflation, but renters avoid property taxes and repairs.
+
+<h2>Building Equity vs. Flexibility</h2>
+Buying a home builds equity over time — that's the portion of the home you actually own. With each mortgage payment, more goes toward your equity rather than interest. Eventually, the home can be sold for a profit or passed on to family.
+
+Renting offers flexibility, perfect for those not ready to settle or who expect to move within a few years. You won't build equity, but you also avoid risks like home depreciation or unexpected repairs.
+
+<h2>How to Compare Rent vs. Buy Costs</h2>
+Here's a simple example breaking down monthly costs for buying vs renting a $300,000 home. For buying, assume a 30-year fixed mortgage at 6% interest with 20% down. Rent is $1,500 monthly with 3% expected annual increases.
+
+<div class="table-wrap"><table>
+  <thead>
+    <tr>
+      <th>Cost Type</th>
+      <th>Buying (Monthly)</th>
+      <th>Renting (Monthly)</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Mortgage Payment (Principal + Interest)</td>
+      <td>$1,438</td>
+      <td>–</td>
+    </tr>
+    <tr>
+      <td>Property Taxes (1.2% per year)</td>
+      <td>$300</td>
+      <td>–</td>
+    </tr>
+    <tr>
+      <td>Home Insurance + Maintenance</td>
+      <td>$250</td>
+      <td>–</td>
+    </tr>
+    <tr>
+      <td>Rent Payment</td>
+      <td>–</td>
+      <td>$1,500</td>
+    </tr>
+    <tr>
+      <td><strong>Total Monthly Cost</strong></td>
+      <td><strong>$1,988</strong></td>
+      <td><strong>$1,500</strong></td>
+    </tr>
+  </tbody>
+</table></div>
+
+<h2>Consider Your Time Horizon</h2>
+Buying a home is best if you plan to stay at least 5-7 years. This timeframe helps you build equity and spread out the upfront costs. Shorter stays may make renting more cost-effective since buying and selling homes generates fees and can involve risks if the market fluctuates.
+
+<h2>Non-Financial Factors to Think About</h2>
+Beyond money, your lifestyle plays a big role. Homeownership means responsibility for repairs and upkeep but also offers stability and control over your environment. Renting can mean less hassle, more mobility, and no worries about home value changes.
+
+<div class="tip-callout"><strong>Key Insight:</strong> Don't base your decision solely on monthly costs. Consider your long-term plans, job stability, and how much flexibility you want. Sometimes paying a bit more monthly to own can be worth it for peace of mind and future wealth.</div>
+
+<div class="cta-box"><p><strong>Start Budgeting Now</strong> Use our free rent vs. buy calculator to see what makes sense for your budget and lifestyle.</p><a href="#budget" class="btn btn-primary btn-sm" data-nav><i class="fas fa-calculator"></i> Start Budgeting Free</a></div>`
+  },
+  {
+    slug: 'how-much-should-you-spend-on-a-car',
+    category: 'budget',
+    title: 'How Much Should You Spend on a Car?',
+    excerpt: 'How much car can you afford? Smart budgeting rules based on your income and expenses.',
+    content: `<p class="lead">Buying a car is a big financial decision, especially if it's your first time or you're on a tight budget. Knowing how much you should spend can help you avoid debt and keep your finances healthy. In this article, we'll break down smart guidelines for how much to spend on a car based on your income and monthly expenses.</p>
+
+<h2>Why Setting a Budget for Your Car Matters</h2>
+<p>Cars can be expensive, not just to buy but to maintain. Without a clear budget, it's easy to overspend and struggle with payments. Setting a realistic spending limit helps you balance your car costs with other important expenses like rent, food, and savings. It also prevents the stress of high monthly bills down the road.</p>
+
+<h2>How Much of Your Income Should Go to a Car?</h2>
+<p>Financial experts often recommend a simple rule: spend no more than 15% of your monthly take-home pay on car payments. If you're paying cash, keep in mind that total car costs shouldn't exceed about 20% of your annual income. This keeps your car affordable and leaves room for other expenses.</p>
+<p>For example, if your take-home pay is $3,000 a month, aim to spend no more than $450 on your car payment.</p>
+
+<h2>Understanding All the Costs of Owning a Car</h2>
+<p>The price on the sticker isn't the only cost to consider. Fuel, insurance, maintenance, taxes, and registration add up quickly. Budgeting for these ongoing costs is just as important as the initial price.</p>
+
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>Expense</th>
+<th>Average Monthly Cost</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Car Payment</td>
+<td>$400 - $600</td>
+</tr>
+<tr>
+<td>Insurance</td>
+<td>$100 - $200</td>
+</tr>
+<tr>
+<td>Fuel</td>
+<td>$100 - $150</td>
+</tr>
+<tr>
+<td>Maintenance and Repairs</td>
+<td>$50 - $100</td>
+</tr>
+<tr>
+<td>Registration and Taxes</td>
+<td>$10 - $25</td>
+</tr>
+</tbody>
+</table>
+</div>
+
+<h2>How to Decide Between New or Used Cars</h2>
+<p>New cars often have the latest features and warranty coverage, but they also come with a higher price tag and faster depreciation. Used cars can be much cheaper upfront but might need more maintenance and lack a full warranty. If your budget is tight, consider a reliable used car under $15,000 to start.</p>
+
+<div class="tip-callout"><strong>Key Insight:</strong> Don't forget to factor in extra costs like insurance, which tends to be higher for new cars. Shop around for insurance quotes before deciding on your budget.</div>
+
+<h2>Final Tips to Stay Within Your Car Budget</h2>
+<p>Before buying, calculate your total monthly car costs and check they fit within 15%-20% of your income. Avoid stretching monthly payments longer than 60 months (5 years), as this often means paying more interest and getting stuck with an older car.</p>
+<p>Also, save at least 10%-20% of the car's price as a down payment to reduce your loan amount and monthly payments.</p>
+
+<div class="cta-box"><p><strong>Start Budgeting Now</strong> Use our free budget calculator to figure out how much car you can truly afford based on your income and expenses.</p><a href="#budget" class="btn btn-primary btn-sm" data-nav><i class="fas fa-calculator"></i> Start Budgeting Free</a></div>`
+  },
+  {
+    slug: 'tax-saving-strategies-for-freelancers',
+    category: 'saving',
+    title: 'Tax-Saving Strategies for Freelancers',
+    excerpt: 'Essential tax-saving tips every freelancer needs to know to keep more of their hard-earned money.',
+    content: `<p class="lead">Freelancing offers unmatched freedom, but it also places the full burden of tax compliance on your shoulders. Unlike W-2 employees, freelancers must handle self-employment tax, quarterly estimated payments, and maximize business deductions without an employer withholding on their behalf. This comprehensive guide walks through every strategy you need to minimize your tax bill legally and keep more of what you earn.</p>
+
+<h2>Your Tax Responsibilities as a Freelancer</h2>
+<p>As a self-employed individual, you are responsible for both income tax and self-employment tax. The self-employment tax rate is 15.3% — 12.4% for Social Security and 2.9% for Medicare. Unlike employees who split this with their employer, freelancers pay the full amount. For 2024, the Social Security portion applies only to the first $168,600 of net earnings.</p>
+<p>Income tax rates are marginal and depend on your filing status. A single filer earning $60,000 in net profit after deductions falls into the 22% bracket for income above $47,150 (2024 rates). Combined, your effective tax rate (including self-employment tax) typically ranges from 20% to 35% depending on your total income, deductions, and state taxes.</p>
+
+<div class="table-wrap"><table>
+<thead>
+  <tr>
+    <th>Net Profit</th>
+    <th>Self-Employment Tax</th>
+    <th>Estimated Income Tax (Single)</th>
+    <th>Total Tax Burden</th>
+    <th>Effective Rate</th>
+  </tr>
+</thead>
+<tbody>
+  <tr>
+    <td>$30,000</td>
+    <td>$4,239</td>
+    <td>$1,759</td>
+    <td>$5,998</td>
+    <td>20.0%</td>
+  </tr>
+  <tr>
+    <td>$50,000</td>
+    <td>$7,065</td>
+    <td>$4,059</td>
+    <td>$11,124</td>
+    <td>22.2%</td>
+  </tr>
+  <tr>
+    <td>$80,000</td>
+    <td>$11,304</td>
+    <td>$9,507</td>
+    <td>$20,811</td>
+    <td>26.0%</td>
+  </tr>
+  <tr>
+    <td>$120,000</td>
+    <td>$15,309</td>
+    <td>$18,507</td>
+    <td>$33,816</td>
+    <td>28.2%</td>
+  </tr>
+  <tr>
+    <td>$168,600</td>
+    <td>$19,044</td>
+    <td>$32,043</td>
+    <td>$51,087</td>
+    <td>30.3%</td>
+  </tr>
+</tbody>
+</table></div>
+<p><em>Note: Income tax estimates assume standard deduction ($14,600 for single filers in 2024). State income taxes not included. Actual results vary.</em></p>
+
+<h2>Maximize Your Business Expense Deductions</h2>
+<p>Every dollar you deduct is a dollar you do not pay taxes on. The key is distinguishing between personal and business expenses and documenting everything. The IRS allows deductions for ordinary and necessary expenses directly related to your freelance business.</p>
+<p>The table below covers the most common deductible expenses freelancers overlook or underutilize:</p>
+
+<div class="table-wrap"><table>
+<thead>
+  <tr>
+    <th>Expense Category</th>
+    <th>Annual Deduction Range</th>
+    <th>Key Rule</th>
+    <th>Documentation Needed</th>
+  </tr>
+</thead>
+<tbody>
+  <tr>
+    <td>Home Office (Simplified)</td>
+    <td>$500-$1,500</td>
+    <td>$5/sq. ft., max 300 sq. ft., exclusive and regular use</td>
+    <td>Room measurements, floor plan, photos</td>
+  </tr>
+  <tr>
+    <td>Home Office (Regular Method)</td>
+    <td>$1,200-$6,000+</td>
+    <td>% of actual housing costs based on sq. ft. ratio</td>
+    <td>Mortgage/rent statements, utilities, insurance, HOA fees</td>
+  </tr>
+  <tr>
+    <td>Internet and Phone</td>
+    <td>$360-$1,200</td>
+    <td>Deduct business-use percentage only</td>
+    <td>Bills showing 12 months, log of business vs personal use</td>
+  </tr>
+  <tr>
+    <td>Equipment and Software</td>
+    <td>$500-$5,000</td>
+    <td>Section 179 allows full deduction up to $1,160,000 (2024)</td>
+    <td>Receipts, invoices, proof of business use over 50%</td>
+  </tr>
+  <tr>
+    <td>Health Insurance Premiums</td>
+    <td>$2,500-$8,000+</td>
+    <td>Deduct AGI — no itemizing needed. Cannot deduct if eligible for employer plan</td>
+    <td>Premium statements (1095-A, insurance company summary)</td>
+  </tr>
+  <tr>
+    <td>Retirement Contributions (SEP IRA)</td>
+    <td>Up to 25% of net earnings (max $66,000)</td>
+    <td>Contribute by tax filing deadline (including extensions)</td>
+    <td>Plan document, contribution receipt, Form 5498</td>
+  </tr>
+  <tr>
+    <td>Vehicle Expenses (Standard Mileage)</td>
+    <td>$1,500-$6,000</td>
+    <td>67 cents/mile for 2024. Commuting not deductible</td>
+    <td>Mileage log (date, destination, purpose, miles)</td>
+  </tr>
+  <tr>
+    <td>Travel (Airfare, Hotels, 50% Meals)</td>
+    <td>$1,000-$10,000</td>
+    <td>Primary purpose must be business. Meals 50% deductible</td>
+    <td>Receipts, itinerary, business purpose notes</td>
+  </tr>
+  <tr>
+    <td>Professional Services (Attorney, CPA, Bookkeeper)</td>
+    <td>$300-$3,000</td>
+    <td>Fully deductible in the year paid</td>
+    <td>Invoices, canceled checks, engagement letters</td>
+  </tr>
+  <tr>
+    <td>Continuing Education and Subscriptions</td>
+    <td>$200-$2,000</td>
+    <td>Must maintain or improve skills for current business</td>
+    <td>Course receipts, certificates, platform subscription confirmations</td>
+  </tr>
+  <tr>
+    <td>Advertising and Marketing</td>
+    <td>$500-$10,000+</td>
+    <td>Website hosting, domain, ads, freelance platform fees</td>
+    <td>Platform invoices, Google/Meta ad receipts, hosting bills</td>
+  </tr>
+  <tr>
+    <td>Bank and Payment Processing Fees</td>
+    <td>$100-$1,000</td>
+    <td>Monthly fees, transaction fees, PayPal/Stripe charges</td>
+    <td>Bank statements, processor monthly summaries</td>
+  </tr>
+</tbody>
+</table></div>
+
+<div class="tip-callout"><strong>Money-Saving Tip:</strong> Use the simplified home office deduction ($5/sq. ft., max $1,500) if your space is under 300 sq. ft. and you want zero depreciation recapture when you sell. Use the regular method if your actual housing costs are high enough that the percentage exceeds $1,500 — run both calculations before filing.</div>
+
+<h2>Quarterly Estimated Tax Payments: The #1 Mistake New Freelancers Make</h2>
+<p>The IRS expects freelancers to pay taxes as they earn income, not once a year at filing time. If you expect to owe $1,000 or more at filing, you must make quarterly estimated payments. Failure to do so results in underpayment penalties and interest — even if you pay the full balance by April 15.</p>
+<p>Quarterly payment due dates for 2024 tax year:</p>
+<ul>
+  <li><strong>Q1 (Jan 1 – Mar 31):</strong> April 15, 2024</li>
+  <li><strong>Q2 (Apr 1 – May 31):</strong> June 17, 2024</li>
+  <li><strong>Q3 (Jun 1 – Aug 31):</strong> September 16, 2024</li>
+  <li><strong>Q4 (Sep 1 – Dec 31):</strong> January 15, 2025</li>
+</ul>
+<p>To calculate your quarterly payment, use Form 1040-ES. A simple rule: pay 30% of each quarter's net profit for federal income tax plus 15.3% self-employment tax = 45.3% total. Pay this percentage of each invoice into a separate tax savings account immediately upon receiving payment.</p>
+
+<div class="tip-callout"><strong>The 45/30/25 Rule:</strong> Set aside 45% of every freelance payment for taxes (30% federal + 15.3% self-employment). Deposit it into a separate high-yield savings account immediately. Pay your quarterly estimates from this account. At year-end, anything left over is yours to keep — an instant bonus from over-withholding.</div>
+
+<h2>Retirement Accounts: The Most Powerful Tax Shelter for Freelancers</h2>
+<p>Retirement contributions reduce your taxable income dollar for dollar and grow tax-deferred until withdrawal. For freelancers, three accounts stand out:</p>
+
+<div class="table-wrap"><table>
+<thead>
+  <tr>
+    <th>Account</th>
+    <th>2024 Contribution Limit</th>
+    <th>Deadline to Contribute</th>
+    <th>Best For</th>
+    <th>Catch-up (Age 50+)</th>
+  </tr>
+</thead>
+<tbody>
+  <tr>
+    <td>SEP IRA</td>
+    <td>25% of net earnings, max $69,000</td>
+    <td>Tax filing deadline (including extensions)</td>
+    <td>Solo freelancers wanting maximum simplicity</td>
+    <td>N/A (same formula applies)</td>
+  </tr>
+  <tr>
+    <td>Solo 401(k)</td>
+    <td>$23,000 employee + 25% employer (up to $69,000 total)</td>
+    <td>Employee deferral: Dec 31. Employer: tax filing deadline</td>
+    <td>Freelancers wanting to maximize elective deferrals</td>
+    <td>$30,500 total elective deferral</td>
+  </tr>
+  <tr>
+    <td>Traditional IRA</td>
+    <td>$7,000</td>
+    <td>Tax filing deadline (no extensions for contributions after April 15)</td>
+    <td>Freelancers with lower income or as supplemental savings</td>
+    <td>$8,000 total</td>
+  </tr>
+  <tr>
+    <td>Roth IRA</td>
+    <td>$7,000</td>
+    <td>Tax filing deadline</td>
+    <td>Freelancers expecting higher future tax rates</td>
+    <td>$8,000 total</td>
+  </tr>
+</tbody>
+</table></div>
+<p><em>Note: 2024 contribution limits shown. Solo 401(k) total limit of $69,000 is the combined employee + employer contribution maximum.</em></p>
+
+<p>Example: A freelancer earning $100,000 net profit who contributes $23,000 to a Solo 401(k) and deducts $7,500 for health insurance saves approximately $8,740 in combined income and self-employment tax (assuming 24% marginal bracket). That is an instant 28.6% return before any investment growth.</p>
+
+<h2>Self-Employment Tax Deduction: The Half That Comes Back</h2>
+<p>One of the most overlooked deductions: you can deduct the employer-equivalent portion of your self-employment tax (50% of the total 15.3%) when calculating your adjusted gross income. This deduction reduces your income tax but does NOT reduce your self-employment tax itself.</p>
+<p>For a freelancer with $60,000 net profit, self-employment tax is $8,478. You can deduct $4,239 (the employer half) on Form 1040 Schedule 1, reducing your AGI and saving approximately $932 in income tax (22% bracket).</p>
+
+<h2>Health Insurance Premium Deduction</h2>
+<p>If you are not eligible for an employer-sponsored health plan (your own or your spouse's), you can deduct 100% of health insurance premiums for yourself, your spouse, and your dependents. This is an above-the-line deduction, meaning you do not need to itemize to claim it. Premiums for dental and long-term care insurance also qualify.</p>
+
+<div class="table-wrap"><table>
+<thead>
+  <tr>
+    <th>Scenario</th>
+    <th>Annual Premium</th>
+    <th>Deduction Type</th>
+    <th>Tax Savings (22% Bracket)</th>
+  </tr>
+</thead>
+<tbody>
+  <tr>
+    <td>Individual HDHP Plan</td>
+    <td>$3,600</td>
+    <td>Above-the-line</td>
+    <td>$792</td>
+  </tr>
+  <tr>
+    <td>Family PPO Plan</td>
+    <td>$7,800</td>
+    <td>Above-the-line</td>
+    <td>$1,716</td>
+  </tr>
+  <tr>
+    <td>HDHP + HSA Contribution</td>
+    <td>$3,600 + $4,150 HSA</td>
+    <td>Above-the-line + HSA deduction</td>
+    <td>$1,705</td>
+  </tr>
+</tbody>
+</table></div>
+
+<div class="tip-callout"><strong>HSA Triple Tax Advantage:</strong> If you have a High-Deductible Health Plan (HDHP), contribute to a Health Savings Account (HSA). For 2024, the limit is $4,150 (individual) or $8,300 (family), plus $1,000 catch-up for age 55+. HSAs offer tax-deductible contributions, tax-free growth, and tax-free withdrawals for qualified medical expenses — the only account with triple tax benefits.</div>
+
+<h2>Standard vs. Itemized Deductions: Which Wins for Freelancers?</h2>
+<p>The standard deduction for 2024 is $14,600 (single) or $29,200 (married filing jointly). If your total itemized deductions (mortgage interest, state and local taxes up to $10,000, charitable contributions, and medical expenses exceeding 7.5% of AGI) exceed these amounts, itemizing saves more.</p>
+<p>Most freelancers benefit from the standard deduction because business expenses are deducted separately on Schedule C — not as itemized deductions. Only your personal deductions compete against the standard deduction.</p>
+
+<h2>Tax Strategy Comparison by Income Level</h2>
+<div class="table-wrap"><table>
+<thead>
+  <tr>
+    <th>Strategy</th>
+    <th>Under $40k</th>
+    <th>$40k-$80k</th>
+    <th>$80k-$150k</th>
+    <th>Over $150k</th>
+  </tr>
+</thead>
+<tbody>
+  <tr>
+    <td>Simplified Home Office</td>
+    <td>Recommended</td>
+    <td>Run both calculations</td>
+    <td>Regular method likely better</td>
+    <td>Regular method</td>
+  </tr>
+  <tr>
+    <td>Retirement Account</td>
+    <td>Roth IRA</td>
+    <td>SEP IRA or Solo 401(k)</td>
+    <td>Solo 401(k) max employee deferral</td>
+    <td>Solo 401(k) max combined</td>
+  </tr>
+  <tr>
+    <td>Health Insurance</td>
+    <td>HDHP + HSA</td>
+    <td>HDHP + HSA max</td>
+    <td>PPO with HSA or HRA</td>
+    <td>PPO + HSA max + additional planning</td>
+  </tr>
+  <tr>
+    <td>Estimated Tax Strategy</td>
+    <td>Safe harbor 100% of prior year</td>
+    <td>Safe harbor 110% if AGI over $150k</td>
+    <td>Pay 90% of current year actual</td>
+    <td>CPA-managed quarterly projections</td>
+  </tr>
+  <tr>
+    <td>Business Entity Structure</td>
+    <td>Sole proprietorship</td>
+    <td>Sole proprietorship or single-member LLC</td>
+    <td>Consider S-corp election</td>
+    <td>S-corp recommended</td>
+  </tr>
+  <tr>
+    <td>Accounting Method</td>
+    <td>Cash basis (simplest)</td>
+    <td>Cash basis</td>
+    <td>Cash basis or accrual</td>
+    <td>Accrual with CPA</td>
+  </tr>
+</tbody>
+</table></div>
+<p><em>S-corp election can reduce self-employment tax by paying yourself a reasonable salary and taking remaining profits as distributions not subject to SE tax. Consult a tax professional before making this election.</em></p>
+
+<h2>Record Keeping: What the IRS Expects</h2>
+<p>Proper documentation is your best defense in an audit. The IRS recommends keeping records for at least three years from the date you filed your return (six years if you underreported income by more than 25%, indefinitely for fraud).</p>
+<ul>
+  <li><strong>Income records:</strong> All 1099 forms, invoices, payment processor statements (PayPal, Stripe, Venmo Business), bank deposit records</li>
+  <li><strong>Expense receipts:</strong> Digital or paper receipts showing amount, date, payee, and business purpose</li>
+  <li><strong>Mileage logs:</strong> Date, starting/ending odometer, destination, business purpose for each trip</li>
+  <li><strong>Home office documentation:</strong> Floor plan with measurements, photos, proof of exclusive business use</li>
+  <li><strong>Vehicle records:</strong> Lease/purchase documents, maintenance receipts, insurance, total annual mileage</li>
+</ul>
+<p>Use accounting software like QuickBooks Self-Employed ($15/month), FreshBooks ($19/month), or Wave (free) to automate income tracking and categorization. The cost of the software is itself a deductible business expense.</p>
+
+<div class="tip-callout"><strong>Audit-Proof Your Deductions:</strong> Create a dedicated business bank account and business credit card. Never mix personal and business transactions in the same account. The IRS focuses on commingled accounts because they are harder to verify. Use apps like Dext or Hubdoc to scan and store receipts digitally with automatic categorization.</div>
+
+<h2>Business Entity Structures and Tax Implications</h2>
+<p>Most freelancers start as sole proprietors, but as your income grows, changing your business structure can generate significant tax savings:</p>
+
+<div class="table-wrap"><table>
+<thead>
+  <tr>
+    <th>Structure</th>
+    <th>Setup Cost</th>
+    <th>Annual Maintenance</th>
+    <th>Self-Employment Tax</th>
+    <th>Liability Protection</th>
+    <th>Best Income Range</th>
+  </tr>
+</thead>
+<tbody>
+  <tr>
+    <td>Sole Proprietorship</td>
+    <td>$0</td>
+    <td>$0</td>
+    <td>15.3% on all net income</td>
+    <td>None</td>
+    <td>$0-$80,000</td>
+  </tr>
+  <tr>
+    <td>Single-Member LLC</td>
+    <td>$100-$800 (state-dependent)</td>
+    <td>$100-$800 annual report/franchise tax</td>
+    <td>15.3% on all net income (default)</td>
+    <td>Personal asset protection</td>
+    <td>$30,000-$150,000</td>
+  </tr>
+  <tr>
+    <td>S-Corporation</td>
+    <td>$100-$800 + payroll setup</td>
+    <td>$1,000-$3,000 (payroll, CPA, state fees)</td>
+    <td>15.3% on reasonable salary only; distributions free of SE tax</td>
+    <td>Personal asset protection</td>
+    <td>$80,000+</td>
+  </tr>
+</tbody>
+</table></div>
+<p><em>S-corp savings example: On $120,000 net profit with a $60,000 reasonable salary, you save approximately $4,590 in self-employment tax annually ($60,000 distributions x 15.3% / 2). After accounting for additional CPA and payroll costs of ~$2,000, net savings are ~$2,590 per year.</em></p>
+
+<h2>Common Freelancer Tax Mistakes and How to Avoid Them</h2>
+<ul>
+  <li><strong>Mistake #1: Not paying quarterly estimates.</strong> The IRS charges penalties even if you pay in full on April 15. Avoid this by setting up the Electronic Federal Tax Payment System (EFTPS) or using IRS Direct Pay.</li>
+  <li><strong>Mistake #2: Deducting commuting miles.</strong> Travel from your home to a regular client site is commuting and is NOT deductible. Only travel between business locations (including a second client) qualifies.</li>
+  <li><strong>Mistake #3: Forgetting the Qualified Business Income (QBI) Deduction.</strong> Section 199A allows a deduction of up to 20% of qualified business income for pass-through entities. For 2024, the phaseout begins at $191,950 (single) and $383,900 (married filing jointly).</li>
+  <li><strong>Mistake #4: Not separating personal and business finances.</strong> Commingled accounts trigger IRS scrutiny and make deduction substantiation much harder in an audit.</li>
+  <li><strong>Mistake #5: Missing the start-up cost deduction.</strong> You can deduct up to $5,000 in business start-up costs immediately (reduced dollar-for-dollar above $50,000). Remaining costs amortize over 180 months.</li>
+</ul>
+
+<h2>State Tax Considerations for Freelancers</h2>
+<p>State income tax rates vary dramatically. Nine states have no income tax: Alaska, Florida, Nevada, New Hampshire, South Dakota, Tennessee, Texas, Washington, and Wyoming. The highest state rates exceed 13% in California and 11% in Hawaii and New York. If you live in a high-tax state, consider structuring your business in a no-tax state if you have physical presence there.</p>
+<p>If you freelance across state lines, you may have nexus (tax presence) in multiple states. Each state has its own threshold for what triggers filing requirements — typically physical presence or economic activity exceeding a dollar amount ($100,000 in sales or 200 transactions in many states under Wayfair rules).</p>
+
+<h2>Year-End Tax Planning Checklist</h2>
+<ul>
+  <li>Max out retirement contributions (SEP IRA or Solo 401(k)) before the tax filing deadline</li>
+  <li>Prepay business expenses in December to increase deductions for the current year</li>
+  <li>Defer sending invoices in late December if you expect to be in a lower tax bracket next year</li>
+  <li>Review QBI deduction eligibility and consider entity structure changes before year-end</li>
+  <li>Check if you qualify for the Earned Income Tax Credit (EITC) — freelancers with lower incomes often miss this</li>
+  <li>Reconcile your quarterly estimated payments: ensure total payments equal at least 90% of current year tax or 100% of prior year tax</li>
+  <li>Run a profit and loss statement to verify your deduction categories are comprehensive</li>
+  <li>Review your mileage log and add any missed business trips</li>
+</ul>
+
+<div class="tip-callout"><strong>When to Hire a CPA:</strong> If your freelance income exceeds $75,000, you have employees, you operate in multiple states, or you are considering an S-corp election, invest in a CPA. The tax savings from professional guidance typically far exceed the $500-$2,000 annual cost. Look for a CPA with experience serving freelance and gig economy clients who understands Section 199A, home office rules, and per-diem travel deductions.</div>
+
+<div class="cta-box"><p><strong>Take Control of Your Freelance Taxes Today.</strong> Use our free Budget Manager to track your income, estimate quarterly payments, and maximize your deductions. The average freelancer overpays $2,400 per year in unnecessary taxes — do not be one of them.</p><a href="#budget" class="btn btn-primary btn-sm" data-nav><i class="fas fa-calculator"></i> Estimate Your Tax Savings</a></div>`
+  }
+]
+
+/* ====== FAQ DATA ====== */
+const FAQS = [
+  { q: 'What is the 50/30/20 budget rule?', a: 'The 50/30/20 rule divides your after-tax income into three categories: 50% for needs (housing, food, utilities), 30% for wants (entertainment, dining out), and 20% for savings and debt repayment. It\'s a simple, flexible framework recommended by financial experts including Senator Elizabeth Warren.' },
+  { q: 'How much should I have in my emergency fund?', a: 'Financial experts recommend saving 3-6 months of essential living expenses. Beginners should start with a $1,000 mini-fund, then build to 3 months, and eventually reach 6 months for maximum security. Keep it in a high-yield savings account.' },
+  { q: 'What\'s the fastest way to pay off debt?', a: 'The debt avalanche method (paying highest-interest debt first) saves the most money. The debt snowball method (paying smallest balances first) provides psychological motivation. Both work — choose the one that keeps you committed.' },
+  { q: 'Should I save or invest my money?', a: 'Save money you\'ll need within 3-5 years (emergency fund, short-term goals). Invest money you won\'t need for 5+ years (retirement, long-term wealth). Build your emergency fund first, then start investing.' },
+  { q: 'How much should I spend on groceries?', a: 'A typical grocery budget for one person ranges from $200-$400 per month depending on location and dietary needs. Using the 50/30/20 rule, groceries fall under needs and should come from the 50% category. Meal planning and buying in bulk can reduce costs by 10-30%.' },
+  { q: 'What is a good credit score for beginners?', a: 'A good credit score for beginners typically starts at 670 or higher. New credit users often begin around 580-650. Paying bills on time, keeping credit utilization under 30%, and avoiding too many hard inquiries can help you build your score over 6-12 months.' },
+  { q: 'How do I start investing with little money?', a: 'You can start investing with as little as $50-$100 through fractional shares, index funds, or ETFs. Many brokerages like Fidelity, Vanguard, and Robinhood have no minimum deposit requirements. Focus on low-cost diversified funds and contribute consistently rather than waiting for a large sum.' },
+  { q: 'What is the difference between a traditional and Roth IRA?', a: 'Traditional IRA contributions are tax-deductible now, but withdrawals in retirement are taxed as ordinary income. Roth IRA contributions are made with after-tax money, but qualified withdrawals are tax-free. Choose Roth if you expect to be in a higher tax bracket in retirement, Traditional if you want a tax break now.' }
+]
