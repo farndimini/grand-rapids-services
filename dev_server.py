@@ -8,8 +8,15 @@ import urllib.parse
 PORT = int(os.environ.get("PORT", "3000"))
 ROOT = os.path.dirname(os.path.abspath(__file__))
 
-with open(os.path.join(ROOT, "vercel.json"), encoding="utf-8") as f:
-    config = json.load(f)
+try:
+    with open(os.path.join(ROOT, "vercel.json"), encoding="utf-8") as f:
+        config = json.load(f)
+except FileNotFoundError:
+    print("ERROR: vercel.json not found — URL rewrites will be disabled.", file=sys.stderr, flush=True)
+    config = {}
+except json.JSONDecodeError as exc:
+    print(f"ERROR: vercel.json contains invalid JSON: {exc}", file=sys.stderr, flush=True)
+    config = {}
 
 rewrites = config.get("rewrites", [])
 
@@ -114,7 +121,10 @@ class Handler(http.server.BaseHTTPRequestHandler):
             self.send_error(500, str(e))
 
     def log_message(self, fmt, *args):
-        print(f"[{self.log_date_time_string()}] {args[0]} {args[1]} {args[2]}", flush=True)
+        try:
+            print(f"[{self.log_date_time_string()}] {args[0]} {args[1]} {args[2]}", flush=True)
+        except (IndexError, TypeError):
+            print(f"[{self.log_date_time_string()}] {fmt % args}", flush=True)
 
 
 if __name__ == "__main__":

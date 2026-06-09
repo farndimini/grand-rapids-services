@@ -76,9 +76,15 @@ Return ONLY the HTML, no markdown."""
             print(f"  → {model}...", end=" ", flush=True)
             payload = json.dumps({"model": model, "messages": messages, "max_tokens": 2000, "temperature": 0.7}).encode()
             req = urllib.request.Request(API_URL, data=payload, headers={"Authorization": f"Bearer {API_KEY}", "Content-Type": "application/json"})
-            resp = urllib.request.urlopen(req, timeout=180)
-            result = json.loads(resp.read().decode())
-            content = result["choices"][0]["message"]["content"].strip()
+            with urllib.request.urlopen(req, timeout=180) as resp:
+                result = json.loads(resp.read().decode())
+            try:
+                content = result["choices"][0]["message"]["content"].strip()
+            except (KeyError, IndexError, TypeError) as e:
+                print(f"unexpected API response structure: {e}")
+                last_error = f"API returned unexpected JSON: {e}"
+                time.sleep(2)
+                continue
             model_used = result.get("model", model)
 
             # Clean markdown fences
@@ -115,9 +121,22 @@ Return ONLY the HTML, no markdown."""
             print(f"{words} words ✓")
             return {"title": topic, "category": category, "html": content, "words": words, "model": model_used, "slug": slugify(topic)}
 
+        except urllib.error.HTTPError as e:
+            err_body = ""
+            try:
+                err_body = e.read().decode("utf-8", errors="replace")[:200]
+            except Exception:
+                pass
+            print(f"HTTP {e.code}: {err_body[:120]}")
+            last_error = f"HTTP {e.code}: {err_body[:200]}"
+            time.sleep(2)
+        except urllib.error.URLError as e:
+            print(f"connection failed: {e.reason}")
+            last_error = f"Connection failed: {e.reason}"
+            time.sleep(2)
         except Exception as e:
-            print(f"failed: {str(e)[:120]}")
-            last_error = str(e)[:200]
+            print(f"failed: {type(e).__name__}: {str(e)[:120]}")
+            last_error = f"{type(e).__name__}: {str(e)[:200]}"
             time.sleep(2)
 
     return {"error": f"All failed: {last_error}"}
@@ -172,7 +191,8 @@ def main():
 
         # Save preview HTML
         preview_path = os.path.join(output_dir, f"{slug}.html")
-        preview_html = f"""<!DOCTYPE html>
+        try:
+            preview_html = f"""<!DOCTYPE html>
 <html lang="en">
 <head><meta charset="UTF-8"><title>{topic} - Preview</title>
 <style>
@@ -196,9 +216,11 @@ def main():
   {article['html']}
 </body>
 </html>"""
-        with open(preview_path, "w", encoding="utf-8") as f:
-            f.write(preview_html)
-        print(f"  📄 Preview saved")
+            with open(preview_path, "w", encoding="utf-8") as f:
+                f.write(preview_html)
+            print(f"  📄 Preview saved")
+        except OSError as e:
+            print(f"  ⚠ Failed to save preview: {e}")
 
         # Build JS entry (escape backticks and ${} for template literal)
         html_content = article["html"]
@@ -217,12 +239,15 @@ def main():
 
         # Save JS file
         js_path = os.path.join(output_dir, "articles_data.js")
-        with open(js_path, "w", encoding="utf-8") as f:
-            f.write("// الوكيل — AUTO-GENERATED ARTICLES\n")
-            f.write("// Paste these into data.js ARTICLES array (before the closing ])\n\n")
-            f.write("const GENERATED_ARTICLES = [\n")
-            f.write("\n".join(js_entries))
-            f.write("\n];\n")
+        try:
+            with open(js_path, "w", encoding="utf-8") as f:
+                f.write("// الوكيل — AUTO-GENERATED ARTICLES\n")
+                f.write("// Paste these into data.js ARTICLES array (before the closing ])\n\n")
+                f.write("const GENERATED_ARTICLES = [\n")
+                f.write("\n".join(js_entries))
+                f.write("\n];\n")
+        except OSError as e:
+            print(f"  ⚠ Failed to save JS data: {e}")
 
         print(f"  ✅ {article['words']} words\n")
         if i < len(topics):
