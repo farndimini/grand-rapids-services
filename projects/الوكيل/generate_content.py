@@ -6,7 +6,10 @@ Follows EXACT article format from existing data.js articles
 import urllib.request, json, sys, os, time, re
 from datetime import datetime
 
-API_KEY = "sk-98sclqUBITjMyC5a8rjgRs6Hv9IObtLqn080K7lCa80OTVwX"
+API_KEY = os.environ.get("BLUES_MINDS_API_KEY", "")
+if not API_KEY:
+    print("ERROR: Set BLUES_MINDS_API_KEY environment variable before running.", file=sys.stderr)
+    sys.exit(1)
 API_URL = "https://api.bluesminds.com/v1/chat/completions"
 
 EXISTING_SLUGS = [

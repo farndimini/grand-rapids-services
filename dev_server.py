@@ -29,7 +29,9 @@ def find_file(path):
     path = path.rstrip("/") or "/"
 
     # Direct file match
-    direct = os.path.join(ROOT, path.lstrip("/"))
+    direct = os.path.realpath(os.path.join(ROOT, path.lstrip("/")))
+    if not direct.startswith(ROOT + os.sep) and direct != ROOT:
+        return None
     if os.path.isfile(direct):
         return direct
 
@@ -40,7 +42,9 @@ def find_file(path):
             return index
 
     # cleanUrls: append .html
-    html = os.path.join(ROOT, path.lstrip("/") + ".html")
+    html = os.path.realpath(os.path.join(ROOT, path.lstrip("/") + ".html"))
+    if not html.startswith(ROOT + os.sep):
+        return None
     if os.path.isfile(html):
         return html
 
