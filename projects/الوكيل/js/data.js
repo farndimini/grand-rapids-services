@@ -11,14 +11,19 @@ const formatCurrency = n => '$' + Number(n).toLocaleString('en-US', { minimumFra
 let state = { incomes: [], expenses: [] }
 
 function saveState() {
-  try { localStorage.setItem('alwakeel_state', JSON.stringify(state)) } catch (e) {}
+  try { localStorage.setItem('alwakeel_state', JSON.stringify(state)) } catch (e) {
+    console.error('Failed to save budget state to localStorage:', e)
+  }
 }
 
 function loadState() {
   try {
     const d = localStorage.getItem('alwakeel_state')
     if (d) state = JSON.parse(d)
-  } catch (e) {}
+  } catch (e) {
+    console.error('Failed to load budget state from localStorage (data may be corrupted):', e)
+    state = { incomes: [], expenses: [] }
+  }
 }
 
 /* ====== ARTICLES ====== */

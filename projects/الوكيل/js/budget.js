@@ -85,9 +85,11 @@ function updateChart() {
   const data = Object.values(cats)
   const colors = ['#3b5af6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316', '#6366f1', '#84cc16']
 
-  if (state.budgetChart) { state.budgetChart.destroy(); state.budgetChart = null }
+  if (state.budgetChart) { try { state.budgetChart.destroy() } catch (_) {} state.budgetChart = null }
   if (labels.length === 0) return
+  if (typeof Chart === 'undefined') { console.warn('Chart.js not loaded — skipping budget chart'); return }
 
+  try {
   state.budgetChart = new Chart(ctx, {
     type: 'doughnut',
     data: { labels, datasets: [{ data, backgroundColor: colors.slice(0, labels.length), borderWidth: 0 }] },
@@ -96,6 +98,7 @@ function updateChart() {
       plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8', padding: 12, font: { size: 11 } } } }
     }
   })
+  } catch (e) { console.error('Failed to render budget chart:', e) }
 }
 
 function updateTips(totalIncome, totalExpenses) {

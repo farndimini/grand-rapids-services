@@ -19,7 +19,9 @@ async function loadModels() {
         `<option value="${id}" ${id === chatModel ? 'selected' : ''}>${m.name}</option>`
       ).join('')
     }
-  } catch (e) { console.log('Model load skipped (offline)') }
+  } catch (e) {
+    console.warn('Failed to load AI models:', e.message || e)
+  }
 }
 
 function toggleChat() {
@@ -60,8 +62,12 @@ async function sendChatMessage() {
     })
 
     if (!resp.ok) {
-      const errData = await resp.json()
-      throw new Error(errData.error?.message || `HTTP ${resp.status}`)
+      let errMsg = `HTTP ${resp.status}`
+      try {
+        const errData = await resp.json()
+        errMsg = errData.error?.message || errMsg
+      } catch (_) { /* response body not JSON */ }
+      throw new Error(errMsg)
     }
 
     const result = await resp.json()

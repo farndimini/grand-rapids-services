@@ -109,7 +109,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
   document.querySelectorAll('a[href^="#"]').forEach(function(anchor) {
     anchor.addEventListener('click', function(e) {
-      const target = document.querySelector(this.getAttribute('href'));
+      var href = this.getAttribute('href');
+      if (!href || href === '#') return;
+      try {
+        var target = document.querySelector(href);
+      } catch (_) { return; }
       if (target) {
         e.preventDefault();
         target.scrollIntoView({ behavior: 'smooth', block: 'start' });

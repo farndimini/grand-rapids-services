@@ -24,14 +24,21 @@ function renderArticles(filter) {
 
 function openArticle(slug) {
   const a = ARTICLES.find(x => x.slug === slug)
-  if (!a) return
+  if (!a) {
+    console.warn('Article not found:', slug)
+    return
+  }
   history.pushState(null, '', '#article-' + slug)
   showArticle(slug)
 }
 
 function showArticle(slug) {
   const a = ARTICLES.find(x => x.slug === slug)
-  if (!a) return
+  if (!a) {
+    console.warn('Article not found:', slug)
+    navigateTo('#articles')
+    return
+  }
   const list = $('articleListView'), detail = $('articleDetailView'), content = $('articleContent')
   list.classList.add('hidden'); detail.classList.add('active')
   content.innerHTML = `

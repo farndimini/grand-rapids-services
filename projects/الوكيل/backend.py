@@ -42,16 +42,24 @@ class AlWakeelHandler(BaseHTTPRequestHandler):
         full_path = PROJECT_DIR / path
         if not full_path.exists() or full_path.is_dir():
             full_path = PROJECT_DIR / "index.html"
+        if not full_path.exists():
+            self._send_json({"error": "File not found and no fallback index.html"}, 404)
+            return
         content_type, _ = mimetypes.guess_type(str(full_path))
         if content_type is None:
             content_type = "application/octet-stream"
+        try:
+            with open(full_path, "rb") as f:
+                data = f.read()
+        except OSError as e:
+            self._send_json({"error": f"Failed to read file: {e.strerror}"}, 500)
+            return
         self.send_response(200)
         self.send_header("Content-Type", content_type)
         self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Cache-Control", "no-cache")
         self.end_headers()
-        with open(full_path, "rb") as f:
-            self.wfile.write(f.read())
+        self.wfile.write(data)
 
     def do_OPTIONS(self):
         self.send_response(204)
@@ -77,9 +85,13 @@ class AlWakeelHandler(BaseHTTPRequestHandler):
     def _handle_chat(self):
         try:
             length = int(self.headers.get("Content-Length", 0))
-            body = json.loads(self.rfile.read(length).decode("utf-8"))
-        except Exception:
-            self._send_json({"error": "Invalid request body"}, 400)
+            raw = self.rfile.read(length)
+            body = json.loads(raw.decode("utf-8"))
+        except (ValueError, json.JSONDecodeError) as e:
+            self._send_json({"error": f"Invalid request body: {e}"}, 400)
+            return
+        except Exception as e:
+            self._send_json({"error": f"Failed to read request: {type(e).__name__}: {e}"}, 400)
             return
 
         messages = body.get("messages", [])
