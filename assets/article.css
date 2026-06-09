@@ -1,0 +1,28 @@
+.article-hero { max-width:800px; margin:0 auto; border-radius:16px; overflow:hidden; }
+.article-hero img { width:100%; height:auto; display:block; }
+.article-wrap { max-width:960px; margin:4rem auto; padding:0 1.5rem; }
+.article-wrap h2 { font-size:1.75rem; color:#1e293b; margin:2.5rem 0 1rem; border-left:4px solid #3b5af6; padding-left:1rem; }
+.art-table { width:100%; border-collapse:collapse; margin:1.5rem 0; font-size:0.95rem; }
+.art-table thead { background:#0f172a; color:white; }
+.art-table th,.art-table td { padding:10px 14px; text-align:left; border:1px solid #e2e8f0; }
+.art-table tbody tr:nth-child(even) { background:#f8fafc; }
+.art-table tbody tr:hover { background:#eef2ff; }
+.art-checklist,.art-process { background:#f8fafc; border-radius:12px; padding:1.5rem 2rem; margin:1.5rem 0; }
+.art-checklist li,.art-process li { margin:0.6rem 0; line-height:1.6; }
+.toc { background:linear-gradient(135deg,#0f172a,#1e293b); border-radius:16px; padding:2rem; margin:2rem 0; color:white; }
+.toc h2 { color:white !important; border-left-color:#3b5af6 !important; }
+.toc-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:12px; margin-top:1rem; }
+.toc-item { background:rgba(255,255,255,0.08); border-radius:10px; padding:12px 16px; display:flex; align-items:center; gap:10px; transition:0.3s; }
+.toc-item:hover { background:rgba(255,255,255,0.15); transform:translateY(-2px); }
+.toc-num { background:#3b5af6; color:white; width:28px; height:28px; border-radius:6px; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:0.85rem; flex-shrink:0; }
+.toc-item a { color:white; text-decoration:none; font-size:0.9rem; }
+.external-links { display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:12px; margin:1.5rem 0; }
+.external-links a { background:#f8fafc; padding:12px 16px; border-radius:10px; text-decoration:none; color:#1e293b; border:1px solid #e2e8f0; transition:0.3s; display:flex; align-items:center; gap:8px; }
+.external-links a:hover { background:#eef2ff; border-color:#3b5af6; }
+.faq-item { background:#f8fafc; border-radius:12px; margin:0.8rem 0; overflow:hidden; }
+.faq-q { padding:1rem 1.5rem; font-weight:600; cursor:pointer; display:flex; justify-content:space-between; align-items:center; }
+.faq-q:hover { background:#eef2ff; }
+.faq-a { padding:0 1.5rem 1rem; color:#475569; line-height:1.6; display:none; }
+.author-box { background:linear-gradient(135deg,#f8fafc,#eef2ff); border-radius:16px; padding:1.5rem; margin:2rem 0; display:flex; gap:1.5rem; align-items:center; flex-wrap:wrap; }
+.author-avatar { width:70px; height:70px; border-radius:50%; background:#3b5af6; display:flex; align-items:center; justify-content:center; color:white; font-weight:700; font-size:1.5rem; flex-shrink:0; }
+@media(max-width:640px){ .article-wrap { padding:0 1rem; } .toc-grid { grid-template-columns:1fr; } }
